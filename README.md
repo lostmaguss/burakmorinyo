@@ -12,14 +12,13 @@ Yeni sürümler eskisinin üzerine kurulur, kayıtlı oyun silinmez.
 
 ## Özellikler
 
-- 2 / 3 / 4 oyuncu: soylu sayısı (3/4/5) ve jeton sayıları (4/5/7, joker 5) otomatik
-- Tur ve sıra takibi; hedef puana ulaşılınca "son tur" uyarısı, tur tamamlanınca oyun biter
-- Kart satın alma (seviye, bonus taşı, puan), kart ayırma (en fazla 3)
-- Soylu gereksinimleri girilirse tur sonunda otomatik verilir (turda en fazla bir tane), kime kaç kart kaldığı gösterilir
-- Eşitlikte en az kart satın alan kazanır
-- Geri al, elle düzeltme, oyun kaydı, rövanş
-- Ayarlar: hedef puan, taş adları, isteğe bağlı Avengers jetonu (+3)
-- Oyun sırasında ekran kararmaz; geri tuşu açık pencereyi kapatır; uygulama kapansa bile oyun kaldığı yerden devam eder
+- 2 / 3 / 4 oyuncu: soylu sayısı (3/4/5) ve jeton sayıları (4/5/7, altın 5) otomatik; klasik Splendor kuralları
+- Zafer yolu: tüm oyuncuların hedefe ne kadar yaklaştığı tek bakışta
+- Oyuncu panelleri: animasyonlu puan halkası, renk bonusları, seviyelere göre kart yığınları, ayrılmış kart yuvaları, soylular
+- Soylu karoları: her oyuncunun her soyluya ne kadar yaklaştığı çubuklarla; şartı sağlayana tur sonunda otomatik verilir (turda en fazla bir tane)
+- Grafikler: puan akışı, bonus dağılımı (radar), puan kaynakları, en verimli oyuncu gibi istatistikler
+- Hedef puana ulaşılınca son tur uyarısı; tur tamamlanınca podyum ve sonuç grafikleri. Eşitlikte en az kart satın alan kazanır
+- Geri al, elle düzeltme, oyun kaydı, rövanş; ekran oyun sırasında kararmaz, uygulama kapansa bile oyun kaldığı yerden devam eder
 
 ## Derleme
 

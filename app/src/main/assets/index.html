@@ -2,208 +2,474 @@
 <html lang="tr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#120d16">
-<title>Marvel Splendor Puan Sayacı</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#07060b">
+<title>Splendor Puan Sayacı</title>
 <style>
   :root {
-    --bg: #120d16;
-    --panel: #1d1622;
-    --panel-2: #271e2e;
-    --line: #3a2d44;
-    --text: #f3ecf6;
-    --muted: #a898b2;
-    --accent: #e23636;
-    --accent-2: #f5c518;
-    --ok: #3ccf7a;
-    --radius: 14px;
-    --g0: #3b82f6; /* Uzay */
-    --g1: #facc15; /* Zihin */
-    --g2: #ef4444; /* Gerçeklik */
-    --g3: #a855f7; /* Güç */
-    --g4: #f97316; /* Ruh */
-    --gj: #22c55e; /* Joker (Zaman) */
+    --bg: #07060b;
+    --glass: rgba(255,255,255,.045);
+    --glass-2: rgba(255,255,255,.075);
+    --edge: rgba(255,255,255,.09);
+    --edge-hi: rgba(255,255,255,.18);
+    --text: #f4efe6;
+    --muted: #9b93a6;
+    --gold: #f2c35b;
+    --gold-2: #ffe7a3;
+    --red: #e8344e;
+    --g0: #e9eef4; /* Beyaz */
+    --g1: #2f7cf6; /* Mavi */
+    --g2: #19b46a; /* Yeşil */
+    --g3: #e5363f; /* Kırmızı */
+    --g4: #3a3742; /* Siyah */
+    --gj: #f2c35b; /* Altın */
+    --ease: cubic-bezier(.2,.8,.2,1);
   }
-  * { box-sizing: border-box; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { margin: 0; overscroll-behavior: none; }
-  * { -webkit-tap-highlight-color: transparent; }
-  body { -webkit-user-select: none; user-select: none; }
-  input { -webkit-user-select: text; user-select: text; }
   body {
-    background: radial-gradient(1200px 600px at 50% -200px, #3a1020 0%, var(--bg) 60%) fixed, var(--bg);
+    background: var(--bg);
     color: var(--text);
     font: 15px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-variant-numeric: tabular-nums;
     min-height: 100vh;
-    padding: 12px 16px calc(24px + env(safe-area-inset-bottom));
+    -webkit-user-select: none; user-select: none;
+    overflow-x: hidden;
   }
-  main { max-width: 860px; margin: 0 auto; }
-  h1 { font-size: 22px; margin: 4px 0 2px; letter-spacing: .5px; }
-  h1 span { color: var(--accent); }
-  h2 { font-size: 17px; margin: 0 0 10px; }
-  .sub { color: var(--muted); font-size: 13px; margin: 0 0 14px; }
-  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; margin-bottom: 12px; }
-  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  input { -webkit-user-select: text; user-select: text; }
+  #ambient, #fx { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  #ambient { z-index: 0; }
+  #fx { z-index: 40; }
+  .vignette { position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background:
+      radial-gradient(900px 500px at 15% -10%, rgba(232,52,78,.22), transparent 60%),
+      radial-gradient(800px 500px at 110% 20%, rgba(47,124,246,.16), transparent 60%),
+      radial-gradient(700px 600px at 50% 120%, rgba(242,195,91,.12), transparent 60%);
+  }
+  main { position: relative; z-index: 1; max-width: 920px; margin: 0 auto; padding: 14px 16px calc(28px + env(safe-area-inset-bottom)); }
+
+  /* ---------- Tipografi ---------- */
+  .brand { text-align: center; padding: 26px 0 8px; }
+  .brand .word {
+    font-size: clamp(40px, 13vw, 72px); font-weight: 900; letter-spacing: .14em; line-height: 1;
+    background: linear-gradient(180deg, var(--gold-2) 0%, var(--gold) 45%, #a8742a 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    filter: drop-shadow(0 4px 24px rgba(242,195,91,.35));
+    padding-left: .14em;
+  }
+  .brand .tag { margin-top: 10px; font-size: 12px; letter-spacing: .5em; text-transform: uppercase; color: var(--muted); padding-left: .5em; }
+  .eyebrow { font-size: 11px; letter-spacing: .28em; text-transform: uppercase; color: var(--muted); margin: 0 0 12px; }
+  h2 { font-size: 18px; margin: 0 0 4px; font-weight: 800; letter-spacing: .01em; }
+
+  /* ---------- Cam paneller ---------- */
+  .glass {
+    position: relative; background: linear-gradient(180deg, var(--glass-2), var(--glass));
+    border: 1px solid var(--edge); border-radius: 22px; padding: 16px;
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    box-shadow: 0 1px 0 rgba(255,255,255,.06) inset, 0 20px 50px -20px rgba(0,0,0,.7);
+    margin-bottom: 14px;
+  }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
   .grow { flex: 1; }
-  button {
-    font: inherit; color: var(--text); background: var(--panel-2); border: 1px solid var(--line);
-    border-radius: 10px; padding: 10px 14px; cursor: pointer; touch-action: manipulation;
-  }
-  button:hover { border-color: #5a4668; }
-  button:disabled { opacity: .4; cursor: not-allowed; }
-  button.primary { background: var(--accent); border-color: var(--accent); font-weight: 600; }
-  button.gold { background: var(--accent-2); border-color: var(--accent-2); color: #1a1300; font-weight: 600; }
-  button.ghost { background: transparent; }
-  button.small { padding: 6px 10px; font-size: 13px; }
-  button.sel { outline: 2px solid var(--accent-2); border-color: var(--accent-2); }
-  input[type=text], input[type=number] {
-    font: inherit; color: var(--text); background: var(--panel-2); border: 1px solid var(--line);
-    border-radius: 10px; padding: 9px 11px; width: 100%;
-  }
-  label.chk { display: flex; gap: 8px; align-items: center; cursor: pointer; }
-  .seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px; }
-  .seg button { padding: 12px 6px; }
-  .big-choice { font-size: 20px; font-weight: 700; }
-  .big-choice small { display: block; font-size: 12px; font-weight: 400; color: var(--muted); }
-  table.ref { width: 100%; border-collapse: collapse; font-size: 14px; }
-  table.ref td { padding: 6px 4px; border-bottom: 1px solid var(--line); }
-  table.ref td:last-child { text-align: right; font-weight: 600; }
-  .gem { display: inline-block; width: 12px; height: 12px; border-radius: 50%; vertical-align: -1px; margin-right: 6px; box-shadow: 0 0 6px currentColor; }
   .muted { color: var(--muted); }
-  .tip { font-size: 13px; color: var(--muted); margin: 8px 0 0; }
+  .tip { font-size: 12.5px; color: var(--muted); margin: 10px 0 0; line-height: 1.5; }
 
-  /* Oyun ekranı */
-  .status { position: sticky; top: 0; z-index: 5; background: rgba(18,13,22,.92); backdrop-filter: blur(6px); margin: 0 -16px 12px; padding: 10px 16px; border-bottom: 1px solid var(--line); }
-  .status .round { font-size: 13px; color: var(--muted); }
-  .status .who { font-size: 18px; font-weight: 700; }
-  .banner { background: var(--accent); color: #fff; border-radius: 10px; padding: 8px 12px; font-weight: 600; margin-top: 8px; font-size: 14px; }
-  .players { display: grid; gap: 10px; grid-template-columns: 1fr; }
-  @media (min-width: 640px) { .players { grid-template-columns: 1fr 1fr; } }
-  .pcard { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; position: relative; }
-  .pcard.active { border-color: var(--accent-2); box-shadow: 0 0 0 1px var(--accent-2), 0 0 24px rgba(245,197,24,.15); }
-  .pcard .top { display: flex; align-items: center; gap: 10px; }
-  .pcard .name { font-weight: 700; font-size: 16px; }
-  .pcard .first { font-size: 11px; color: #1a1300; background: var(--accent-2); padding: 1px 6px; border-radius: 6px; margin-left: 6px; font-weight: 700; }
-  .score { margin-left: auto; text-align: right; }
-  .score b { font-size: 34px; line-height: 1; }
-  .score .of { color: var(--muted); font-size: 13px; }
-  .bar { height: 6px; background: var(--panel-2); border-radius: 4px; overflow: hidden; margin: 8px 0; }
-  .bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); }
-  .bonuses { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin: 8px 0; }
-  .bonus { background: var(--panel-2); border-radius: 8px; text-align: center; padding: 4px 0; border-top: 3px solid; }
-  .bonus b { display: block; font-size: 17px; }
-  .bonus span { font-size: 10px; color: var(--muted); }
-  .facts { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: 13px; color: var(--muted); }
-  .facts b { color: var(--text); }
-  .warn { color: var(--accent-2); }
-  .nobleline { font-size: 13px; margin-top: 6px; }
-  .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
-  .actions button { padding: 12px 6px; }
-  .actions .wide { grid-column: span 2; }
+  /* ---------- Düğmeler ---------- */
+  button {
+    font: inherit; color: var(--text); background: var(--glass-2); border: 1px solid var(--edge);
+    border-radius: 14px; padding: 11px 14px; cursor: pointer; touch-action: manipulation;
+    transition: transform .15s var(--ease), background .2s, border-color .2s, box-shadow .2s;
+  }
+  button:active:not(:disabled) { transform: scale(.96); }
+  button:disabled { opacity: .35; }
+  .btn-gold {
+    background: linear-gradient(180deg, #ffe08a, #e0a53a); color: #2a1a00; border: 0; font-weight: 800; letter-spacing: .02em;
+    box-shadow: 0 10px 30px -10px rgba(242,195,91,.7), 0 1px 0 rgba(255,255,255,.6) inset;
+  }
+  .btn-ghost { background: transparent; }
+  .btn-icon { width: 42px; height: 42px; padding: 0; display: inline-grid; place-items: center; border-radius: 13px; }
+  .btn-icon svg { width: 20px; height: 20px; }
+  .sel { border-color: var(--gold) !important; box-shadow: 0 0 0 1px var(--gold) inset, 0 0 22px -6px var(--gold); }
 
-  .nobles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
-  .noble { background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 10px; font-size: 13px; }
-  .noble.taken { opacity: .55; }
-  .noble .nt { display: flex; justify-content: space-between; font-weight: 700; margin-bottom: 6px; }
-  .reqs { display: flex; gap: 4px; flex-wrap: wrap; }
-  .req { display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 26px; border-radius: 6px; font-weight: 700; color: #111; padding: 0 4px; }
-  .near { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  input[type=text], input[type=number] {
+    font: inherit; color: var(--text); background: rgba(0,0,0,.3); border: 1px solid var(--edge);
+    border-radius: 12px; padding: 11px 12px; width: 100%; outline: none; transition: border-color .2s;
+  }
+  input:focus { border-color: var(--gold); }
 
-  .stepper { display: inline-flex; align-items: center; gap: 6px; }
-  .stepper button { width: 34px; height: 34px; padding: 0; font-size: 18px; }
-  .stepper output { min-width: 22px; text-align: center; font-weight: 700; }
-  .reqgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
-  .reqgrid .cell { text-align: center; border-top: 3px solid; background: var(--panel); border-radius: 8px; padding: 4px 0; }
-  .reqgrid .cell button { width: 100%; padding: 2px 0; border: 0; background: transparent; font-size: 16px; }
-  .reqgrid .cell b { display: block; font-size: 16px; }
+  /* ---------- Taş simgeleri ---------- */
+  .gem { display: inline-block; width: 22px; height: 22px; vertical-align: middle; filter: drop-shadow(0 2px 6px rgba(0,0,0,.5)); }
+  .gem.lg { width: 34px; height: 34px; }
+  .gem.xl { width: 46px; height: 46px; }
 
-  .log { max-height: 220px; overflow: auto; font-size: 13px; color: var(--muted); padding-left: 18px; margin: 0; }
-  .log li { margin: 2px 0; }
+  /* ---------- Kurulum ---------- */
+  .counts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .count {
+    padding: 16px 6px 14px; border-radius: 18px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 8px;
+  }
+  .count .n { font-size: 34px; font-weight: 900; line-height: 1; }
+  .count .dots { display: flex; gap: 4px; }
+  .count .dots i { width: 9px; height: 9px; border-radius: 50%; background: var(--edge-hi); }
+  .count.sel .dots i { background: var(--gold); box-shadow: 0 0 8px var(--gold); }
+  .count small { color: var(--muted); font-size: 11.5px; }
+  .seat { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
+  .avatar {
+    flex: none; width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; font-weight: 900; font-size: 17px;
+    color: #0b0910; background: radial-gradient(circle at 30% 25%, #fff8 0, transparent 40%), var(--pc);
+    box-shadow: 0 0 0 2px rgba(0,0,0,.4), 0 0 18px -4px var(--pc);
+  }
+  .avatar.sm { width: 30px; height: 30px; font-size: 13px; }
+  .first-btn { font-size: 12.5px; padding: 9px 10px; white-space: nowrap; }
+  .supply { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .supply .cell { background: rgba(0,0,0,.25); border: 1px solid var(--edge); border-radius: 16px; padding: 12px 8px; text-align: center; }
+  .supply .cell b { display: block; font-size: 26px; font-weight: 900; }
+  .supply .cell span { font-size: 11px; color: var(--muted); letter-spacing: .04em; }
+  .gemrow { display: flex; justify-content: center; gap: 2px; margin-bottom: 6px; }
+  .cta { width: 100%; padding: 17px; font-size: 16px; border-radius: 18px; }
 
-  /* Modal */
-  .backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: flex; align-items: flex-end; justify-content: center; z-index: 20; }
-  @media (min-width: 640px) { .backdrop { align-items: center; } }
-  .sheet { background: var(--panel); border: 1px solid var(--line); border-radius: 18px 18px 0 0; width: 100%; max-width: 520px; max-height: 90vh; overflow: auto; padding: 16px 16px calc(16px + env(safe-area-inset-bottom)); }
-  @media (min-width: 640px) { .sheet { border-radius: 18px; } }
-  .sheet h3 { margin: 0 0 12px; }
-  .sheet .lbl { font-size: 13px; color: var(--muted); margin: 12px 0 6px; }
-  .gempick { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
-  .gempick button { padding: 10px 2px; font-size: 12px; border-top: 4px solid; }
-  .ptpick { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
-  .cardlist { list-style: none; margin: 0; padding: 0; }
-  .cardlist li { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
-  .toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom)); transform: translateX(-50%); background: var(--accent-2); color: #1a1300; font-weight: 700; padding: 10px 16px; border-radius: 12px; z-index: 30; box-shadow: 0 6px 24px rgba(0,0,0,.4); max-width: calc(100% - 32px); text-align: center; }
+  /* ---------- Soylu ayarı ---------- */
+  .noble-edit { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 12px; }
+  .noble-edit .col { display: flex; flex-direction: column; align-items: center; gap: 4px; background: rgba(0,0,0,.25); border-radius: 14px; padding: 8px 0; border: 1px solid var(--edge); }
+  .noble-edit .col b { font-size: 20px; font-weight: 900; }
+  .noble-edit .col button { width: 100%; border: 0; background: transparent; padding: 4px 0; font-size: 18px; color: var(--muted); }
+  .presets { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  .presets button { font-size: 12px; padding: 7px 10px; border-radius: 10px; }
 
-  .rank { display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 12px; background: var(--panel-2); margin-bottom: 8px; }
-  .rank .pos { font-size: 22px; width: 34px; text-align: center; }
-  .rank.win { background: linear-gradient(90deg, rgba(245,197,24,.25), var(--panel-2)); border: 1px solid var(--accent-2); }
-  details summary { cursor: pointer; font-weight: 600; }
+  /* ---------- HUD ---------- */
+  .hud {
+    position: sticky; top: 0; z-index: 10; margin: -14px -16px 14px; padding: 12px 16px 10px;
+    background: linear-gradient(180deg, rgba(7,6,11,.95), rgba(7,6,11,.75)); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--edge);
+  }
+  .hud .now { display: flex; align-items: center; gap: 10px; }
+  .hud .round { font-size: 11px; letter-spacing: .22em; text-transform: uppercase; color: var(--muted); }
+  .hud .who { font-size: 19px; font-weight: 900; }
+  .tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px; margin-top: 10px; background: rgba(0,0,0,.35); border-radius: 14px; border: 1px solid var(--edge); }
+  .tabs button { border: 0; background: transparent; padding: 8px 4px; font-size: 13px; font-weight: 700; color: var(--muted); border-radius: 10px; }
+  .tabs button.on { background: var(--glass-2); color: var(--text); box-shadow: 0 1px 0 rgba(255,255,255,.08) inset; }
+  .final {
+    margin-top: 10px; padding: 9px 12px; border-radius: 12px; font-weight: 800; font-size: 13px; text-align: center;
+    background: linear-gradient(90deg, rgba(232,52,78,.25), rgba(242,195,91,.25)); border: 1px solid rgba(242,195,91,.4);
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes pulse { 50% { box-shadow: 0 0 24px -4px rgba(242,195,91,.6); } }
+
+  /* ---------- Yarış pisti ---------- */
+  .track { position: relative; height: 74px; margin: 6px 6px 0; }
+  .track .rail { position: absolute; left: 0; right: 0; top: 40px; height: 6px; border-radius: 6px; background: rgba(255,255,255,.07); overflow: hidden; }
+  .track .rail i { position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(242,195,91,.35)); }
+  .track .tick { position: absolute; top: 50px; transform: translateX(-50%); font-size: 10px; color: var(--muted); }
+  .track .flag { position: absolute; right: -6px; top: 22px; width: 18px; height: 22px; }
+  .pin { position: absolute; top: 0; transform: translateX(-50%); transition: left 1s var(--ease); display: flex; flex-direction: column; align-items: center; }
+  .pin .avatar { width: 26px; height: 26px; font-size: 11px; }
+  .pin::after { content: ""; width: 2px; height: 12px; background: var(--pc); box-shadow: 0 0 6px var(--pc); }
+
+  /* ---------- Oyuncu panelleri ---------- */
+  .players { display: grid; gap: 14px; grid-template-columns: 1fr; }
+  @media (min-width: 700px) { .players { grid-template-columns: 1fr 1fr; } }
+  .player { margin: 0; overflow: hidden; transition: transform .4s var(--ease), box-shadow .4s; }
+  .player::before {
+    content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: .5;
+    background: radial-gradient(400px 160px at 0% 0%, color-mix(in srgb, var(--pc) 22%, transparent), transparent 70%);
+  }
+  .player.active { border-color: var(--pc); box-shadow: 0 24px 60px -24px var(--pc); }
+  .player.active { border-color: color-mix(in srgb, var(--pc) 70%, transparent); box-shadow: 0 0 0 1px color-mix(in srgb, var(--pc) 50%, transparent), 0 24px 60px -24px var(--pc); }
+  .player.active::after {
+    content: ""; position: absolute; inset: -1px; border-radius: inherit; pointer-events: none; padding: 1px;
+    background: conic-gradient(from var(--spin, 0deg), transparent 0 70%, var(--pc) 85%, transparent 100%);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
+    animation: spin 3.5s linear infinite;
+  }
+  @property --spin { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+  @keyframes spin { to { --spin: 360deg; } }
+  .phead { display: flex; align-items: center; gap: 12px; position: relative; }
+  .pname { font-weight: 900; font-size: 17px; }
+  .chip { display: inline-block; font-size: 10px; font-weight: 800; letter-spacing: .12em; padding: 2px 7px; border-radius: 6px; margin-left: 6px; vertical-align: 2px; }
+  .chip.first { background: var(--gold); color: #2a1a00; }
+  .chip.turn { background: var(--pc); color: #0b0910; }
+  .breakdown { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .ring { margin-left: auto; position: relative; width: 78px; height: 78px; flex: none; }
+  .ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+  .ring .val { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; line-height: 1; }
+  .ring .val b { font-size: 28px; font-weight: 900; }
+  .ring .val small { display: block; font-size: 10px; color: var(--muted); margin-top: 2px; }
+  .ring circle.prog { transition: stroke-dashoffset 1s var(--ease); filter: drop-shadow(0 0 4px var(--pc)); }
+
+  .bonusrow { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin: 14px 0 12px; position: relative; }
+  .bonus { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 0 6px; border-radius: 14px; background: rgba(0,0,0,.28); border: 1px solid var(--edge); }
+  .bonus b { font-size: 18px; font-weight: 900; line-height: 1; }
+  .bonus.zero { opacity: .45; }
+  .meta { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; position: relative; font-size: 12.5px; color: var(--muted); }
+  .meta b { color: var(--text); }
+  .stacks { display: flex; gap: 5px; align-items: flex-end; }
+  .stack { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .stack .pile { width: 18px; border-radius: 3px; background: linear-gradient(180deg, rgba(255,255,255,.25), rgba(255,255,255,.08)); border: 1px solid var(--edge-hi); min-height: 3px; transition: height .6s var(--ease); }
+  .stack span { font-size: 9.5px; letter-spacing: .05em; }
+  .slots { display: flex; gap: 4px; }
+  .slots i { width: 14px; height: 19px; border-radius: 3px; border: 1px dashed var(--edge-hi); }
+  .slots i.on { border: 0; background: linear-gradient(160deg, var(--gold-2), #b07a25); box-shadow: 0 0 8px -2px var(--gold); }
+  .crowns { display: flex; gap: 3px; }
+  .crowns svg { width: 18px; height: 18px; color: var(--gold); filter: drop-shadow(0 0 4px rgba(242,195,91,.6)); }
+
+  .acts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; position: relative; }
+  .act { display: flex; align-items: center; gap: 10px; padding: 13px 12px; border-radius: 16px; font-weight: 800; font-size: 14px; text-align: left; }
+  .act svg { width: 26px; height: 26px; flex: none; }
+  .act.buy { grid-column: span 2; justify-content: center; padding: 16px; font-size: 15.5px; }
+  .act small { display: block; font-weight: 500; font-size: 11px; color: var(--muted); }
+  .pfoot { display: flex; justify-content: flex-end; margin-top: 10px; position: relative; }
+  .pfoot button { font-size: 12px; padding: 7px 11px; border-radius: 10px; color: var(--muted); }
+
+  /* ---------- Soylular ---------- */
+  .nobles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+  .noble {
+    position: relative; aspect-ratio: 1 / 1; border-radius: 16px; padding: 10px; overflow: hidden;
+    background:
+      radial-gradient(circle at 70% 35%, rgba(242,195,91,.18), transparent 55%),
+      linear-gradient(160deg, #2a2233, #15111b);
+    border: 1px solid rgba(242,195,91,.25); display: flex; flex-direction: column;
+    box-shadow: 0 1px 0 rgba(255,255,255,.08) inset;
+  }
+  .noble .pts { font-size: 30px; font-weight: 900; line-height: 1; color: var(--gold-2); text-shadow: 0 0 16px rgba(242,195,91,.6); }
+  .noble .crown-bg { position: absolute; right: -6px; top: 4px; width: 78px; height: 78px; color: rgba(242,195,91,.13); }
+  .noble .reqs { display: flex; flex-direction: column; gap: 3px; margin-top: 6px; position: relative; }
+  .noble .req { display: flex; align-items: center; gap: 4px; font-weight: 900; font-size: 14px; }
+  .noble .req .gem { width: 18px; height: 18px; }
+  .noble .prog { margin-top: auto; display: flex; flex-direction: column; gap: 3px; position: relative; }
+  .noble .prog .pb { height: 4px; border-radius: 3px; background: rgba(255,255,255,.08); overflow: hidden; }
+  .noble .prog .pb i { display: block; height: 100%; background: var(--pc); box-shadow: 0 0 6px var(--pc); transition: width .8s var(--ease); }
+  .noble.taken { filter: saturate(.4) brightness(.75); }
+  .noble .owner { margin-top: auto; display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 800; position: relative; }
+  .noble .unknown { margin-top: 8px; font-size: 11.5px; color: var(--muted); position: relative; }
+
+  /* ---------- Grafikler ---------- */
+  .chart { width: 100%; height: auto; display: block; overflow: visible; }
+  .chart text { fill: var(--muted); font-size: 10px; font-family: inherit; }
+  .chart .line { fill: none; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: var(--len); stroke-dashoffset: var(--len); animation: draw 1.4s var(--ease) forwards; }
+  @keyframes draw { to { stroke-dashoffset: 0; } }
+  .legend { display: flex; flex-wrap: wrap; gap: 10px 16px; margin-top: 10px; font-size: 12.5px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i { width: 10px; height: 10px; border-radius: 50%; background: var(--pc); box-shadow: 0 0 8px var(--pc); }
+  .statgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+  .stat { background: rgba(0,0,0,.28); border: 1px solid var(--edge); border-radius: 16px; padding: 12px; }
+  .stat .k { font-size: 11px; color: var(--muted); letter-spacing: .06em; }
+  .stat .v { font-size: 22px; font-weight: 900; margin-top: 4px; }
+  .stat .who { font-size: 12px; display: flex; align-items: center; gap: 6px; margin-top: 4px; }
+  .bars { display: flex; flex-direction: column; gap: 10px; }
+  .barrow { display: grid; grid-template-columns: 90px 1fr 34px; gap: 10px; align-items: center; font-size: 13px; }
+  .barrow .b { height: 12px; border-radius: 8px; background: rgba(255,255,255,.06); overflow: hidden; display: flex; }
+  .barrow .b i { height: 100%; transition: width 1s var(--ease); }
+  .barrow .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .log { list-style: none; margin: 0; padding: 0; }
+  .log li { display: flex; gap: 10px; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--edge); font-size: 13.5px; }
+  .log li .t { font-size: 10.5px; color: var(--muted); width: 32px; flex: none; letter-spacing: .05em; }
+
+  /* ---------- Pencereler ---------- */
+  .backdrop { position: fixed; inset: 0; background: rgba(3,2,6,.7); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); display: flex; align-items: flex-end; justify-content: center; z-index: 30; animation: fade .25s ease; }
+  @media (min-width: 700px) { .backdrop { align-items: center; } }
+  @keyframes fade { from { opacity: 0; } }
+  .sheet {
+    width: 100%; max-width: 540px; max-height: 92vh; overflow: auto; padding: 20px 18px calc(20px + env(safe-area-inset-bottom));
+    background: linear-gradient(180deg, #1c1724, #0f0c14); border: 1px solid var(--edge-hi); border-bottom: 0;
+    border-radius: 26px 26px 0 0; box-shadow: 0 -30px 80px -20px rgba(0,0,0,.8);
+    animation: rise .35s var(--ease);
+  }
+  @media (min-width: 700px) { .sheet { border-radius: 26px; border-bottom: 1px solid var(--edge-hi); } }
+  @keyframes rise { from { transform: translateY(40px); opacity: 0; } }
+  .sheet .grab { width: 44px; height: 5px; border-radius: 4px; background: var(--edge-hi); margin: -6px auto 14px; }
+  .sheet h3 { margin: 0 0 4px; font-size: 19px; font-weight: 900; }
+  .lbl { font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: var(--muted); margin: 16px 0 8px; }
+  .seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 8px; }
+  .seg button { padding: 12px 4px; font-weight: 800; }
+  .gempick { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+  .gempick button { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 2px 8px; font-size: 11px; font-weight: 700; border-radius: 14px; }
+  .ptpick { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+  .ptpick button { padding: 12px 0; font-size: 17px; font-weight: 900; }
+  .ptpick button.dim { opacity: .45; }
+  .toggle { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 14px; background: rgba(0,0,0,.25); border: 1px solid var(--edge); margin-top: 14px; cursor: pointer; }
+  .toggle .sw { width: 44px; height: 26px; border-radius: 13px; background: rgba(255,255,255,.12); position: relative; transition: background .2s; flex: none; }
+  .toggle .sw::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: transform .25s var(--ease); }
+  .toggle.on .sw { background: var(--gold); }
+  .toggle.on .sw::after { transform: translateX(18px); }
+  .toggle.off { opacity: .4; pointer-events: none; }
+
+  /* Kart önizlemesi */
+  .buywrap { display: grid; grid-template-columns: 112px 1fr; gap: 16px; align-items: start; }
+  .devcard {
+    width: 112px; aspect-ratio: 63 / 88; border-radius: 12px; position: relative; overflow: hidden;
+    background:
+      radial-gradient(circle at 50% 120%, color-mix(in srgb, var(--cc) 60%, transparent), transparent 70%),
+      linear-gradient(160deg, #2b2533, #120f18);
+    border: 1px solid var(--cc);
+    border: 1px solid color-mix(in srgb, var(--cc) 55%, transparent);
+    box-shadow: 0 20px 40px -18px var(--cc), 0 1px 0 rgba(255,255,255,.1) inset;
+    transition: box-shadow .3s, border-color .3s; transform: rotate(-3deg);
+  }
+  .devcard .band { position: absolute; left: 0; right: 0; top: 0; height: 34%; background: rgba(255,255,255,.08); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: space-between; padding: 0 8px; border-bottom: 1px solid rgba(255,255,255,.08); }
+  .devcard .band b { font-size: 30px; font-weight: 900; color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,.6); }
+  .devcard .band b.empty { opacity: 0; }
+  .devcard .lvl { position: absolute; bottom: 8px; left: 0; right: 0; display: flex; justify-content: center; gap: 4px; }
+  .devcard .lvl i { width: 7px; height: 7px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 6px var(--gold); }
+  .devcard .sheen { position: absolute; inset: 0; background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,.12) 45%, transparent 60%); animation: sheen 3.5s ease-in-out infinite; }
+  @keyframes sheen { 0%, 60% { transform: translateX(-120%); } 100% { transform: translateX(120%); } }
+
+  .list { list-style: none; padding: 0; margin: 0; }
+  .list li { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--edge); font-size: 14px; }
+  .stepper { display: inline-flex; align-items: center; gap: 4px; background: rgba(0,0,0,.3); border-radius: 12px; padding: 3px; border: 1px solid var(--edge); }
+  .stepper button { width: 36px; height: 34px; padding: 0; border: 0; background: transparent; font-size: 19px; }
+  .stepper output { min-width: 30px; text-align: center; font-weight: 900; }
+  .choice { width: 100%; display: flex; align-items: center; gap: 12px; margin-top: 8px; text-align: left; padding: 12px; }
+
+  /* Sıra geçişi ve kutlamalar */
+  .turnflash { position: fixed; inset: 0; z-index: 35; display: grid; place-items: center; pointer-events: none; }
+  .turnflash div {
+    padding: 16px 26px; border-radius: 20px; font-size: 22px; font-weight: 900; text-align: center;
+    background: rgba(10,8,14,.82); border: 1px solid var(--pc); box-shadow: 0 0 60px -10px var(--pc);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    animation: flash 1.15s var(--ease) forwards;
+  }
+  .turnflash small { display: block; font-size: 10.5px; letter-spacing: .3em; color: var(--muted); font-weight: 700; margin-bottom: 4px; }
+  @keyframes flash { 0% { opacity: 0; transform: scale(.85); } 18% { opacity: 1; transform: scale(1); } 75% { opacity: 1; } 100% { opacity: 0; transform: scale(1.05); } }
+  .celebrate { position: fixed; inset: 0; z-index: 36; display: grid; place-items: center; background: rgba(3,2,6,.6); animation: fade .3s; }
+  .celebrate .box { text-align: center; animation: pop .6s var(--ease); }
+  .celebrate svg { width: 120px; height: 120px; color: var(--gold); filter: drop-shadow(0 0 30px rgba(242,195,91,.8)); animation: float 2s ease-in-out infinite; }
+  .celebrate h3 { font-size: 26px; margin: 10px 0 4px; font-weight: 900; }
+  .celebrate p { margin: 0; color: var(--gold-2); font-weight: 800; font-size: 18px; }
+  @keyframes pop { from { transform: scale(.5); opacity: 0; } }
+  @keyframes float { 50% { transform: translateY(-8px); } }
+  .toast { position: fixed; left: 50%; bottom: calc(22px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 50; padding: 12px 18px; border-radius: 14px; font-weight: 800; font-size: 14px; background: rgba(20,16,26,.95); border: 1px solid var(--gold); box-shadow: 0 10px 40px -10px rgba(242,195,91,.6); max-width: calc(100% - 32px); text-align: center; animation: rise .3s var(--ease); }
+
+  /* Sonuç ekranı */
+  .podium { display: flex; justify-content: center; align-items: flex-end; gap: 10px; margin: 26px 0 16px; }
+  .podium .col { flex: 1; max-width: 120px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .podium .blk {
+    width: 100%; border-radius: 14px 14px 6px 6px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 10px;
+    background: linear-gradient(180deg, var(--pc), #120f17); border: 1px solid var(--pc);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--pc) 55%, #1a1520), #120f17); border: 1px solid color-mix(in srgb, var(--pc) 60%, transparent);
+    box-shadow: 0 0 40px -14px var(--pc); animation: growup 1s var(--ease) both;
+  }
+  .podium .blk b { font-size: 28px; font-weight: 900; }
+  .podium .blk span { font-size: 12px; color: var(--muted); }
+  .podium .nm { font-weight: 900; font-size: 14px; text-align: center; overflow: hidden; text-overflow: ellipsis; max-width: 100%; white-space: nowrap; }
+  @keyframes growup { from { height: 0 !important; opacity: 0; } }
+  .winner-title { text-align: center; font-size: 26px; font-weight: 900; margin: 8px 0 0; }
+  .winner-title span { background: linear-gradient(180deg, var(--gold-2), var(--gold)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
 </style>
 </head>
 <body>
+<canvas id="ambient"></canvas>
+<div class="vignette"></div>
+<canvas id="fx"></canvas>
 <main id="app"></main>
 
-<script>
-/* ===================== Kurallar ve sabitler ===================== */
+<!-- Paylaşılan SVG semboller -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <!-- Yontulmuş taş: renk currentColor'dan gelir, yüzeyler beyaz/siyah katmanlarla gölgelenir -->
+    <symbol id="gem" viewBox="0 0 100 100">
+      <polygon points="50,3 91,26 91,74 50,97 9,74 9,26" fill="currentColor"/>
+      <polygon points="50,3 91,26 72,37 50,24" fill="#fff" fill-opacity=".42"/>
+      <polygon points="9,26 50,3 50,24 28,37" fill="#fff" fill-opacity=".58"/>
+      <polygon points="91,26 91,74 72,63 72,37" fill="#000" fill-opacity=".12"/>
+      <polygon points="91,74 50,97 50,76 72,63" fill="#000" fill-opacity=".34"/>
+      <polygon points="50,97 9,74 28,63 50,76" fill="#000" fill-opacity=".22"/>
+      <polygon points="9,74 9,26 28,37 28,63" fill="#fff" fill-opacity=".18"/>
+      <polygon points="50,24 72,37 72,63 50,76 28,63 28,37" fill="#fff" fill-opacity=".1"/>
+      <polygon points="50,24 72,37 50,50 28,37" fill="#fff" fill-opacity=".2"/>
+      <path d="M34 30 L42 26 L38 36 Z" fill="#fff" fill-opacity=".9"/>
+      <polygon points="50,3 91,26 91,74 50,97 9,74 9,26" fill="none" stroke="#000" stroke-opacity=".35" stroke-width="2"/>
+    </symbol>
+    <!-- Altın jeton -->
+    <symbol id="coin" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="46" fill="#b07a25"/>
+      <circle cx="50" cy="48" r="44" fill="#f2c35b"/>
+      <circle cx="50" cy="48" r="33" fill="none" stroke="#a8742a" stroke-width="3"/>
+      <path d="M50 24 L57 42 L76 43 L61 55 L66 73 L50 63 L34 73 L39 55 L24 43 L43 42 Z" fill="#ffe7a3"/>
+      <ellipse cx="36" cy="28" rx="12" ry="6" fill="#fff" fill-opacity=".45" transform="rotate(-30 36 28)"/>
+    </symbol>
+    <symbol id="crown" viewBox="0 0 24 24">
+      <path fill="currentColor" d="M3 7.5l4.5 3.8L12 4l4.5 7.3L21 7.5 19.3 18H4.7L3 7.5zM5 19.5h14V21H5v-1.5z"/>
+    </symbol>
+    <symbol id="i-undo" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M9 14L4 9l5-5M4 9h10.5a5.5 5.5 0 010 11H11"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M4 7h16M4 12h16M4 17h10"/></symbol>
+    <symbol id="i-tokens" viewBox="0 0 32 32">
+      <circle cx="11" cy="18" r="8" fill="#2f7cf6"/><circle cx="11" cy="18" r="5" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="1.5"/>
+      <circle cx="21" cy="13" r="8" fill="#e5363f"/><circle cx="21" cy="13" r="5" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="1.5"/>
+      <circle cx="20" cy="23" r="7" fill="#19b46a"/><circle cx="20" cy="23" r="4.3" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="1.5"/>
+    </symbol>
+    <symbol id="i-reserve" viewBox="0 0 32 32">
+      <rect x="6" y="4" width="17" height="23" rx="3" fill="#3a3346" stroke="#fff" stroke-opacity=".3"/>
+      <rect x="10" y="7" width="17" height="23" rx="3" fill="#2a2433" stroke="#f2c35b" stroke-width="1.5"/>
+      <circle cx="18.5" cy="18.5" r="5" fill="url(#coinGrad)"/>
+    </symbol>
+    <symbol id="i-buy" viewBox="0 0 32 32">
+      <rect x="7" y="3" width="18" height="26" rx="3" fill="#2a2433" stroke="#fff" stroke-opacity=".5"/>
+      <rect x="7" y="3" width="18" height="9" rx="3" fill="#fff" fill-opacity=".15"/>
+      <path d="M16 16 L21 19 L21 24 L16 27 L11 24 L11 19 Z" fill="#f2c35b"/>
+    </symbol>
+    <radialGradient id="coinGrad"><stop offset="0" stop-color="#ffe7a3"/><stop offset="1" stop-color="#d49a35"/></radialGradient>
+  </defs>
+</svg>
 
-// Splendor kurulum kuralları (oyuncu sayısına göre)
+<script>
+/* ===================== Kurallar ===================== */
+
+// Klasik Splendor kurulumu (oyuncu sayısına göre)
 const SETUP = {
   2: { tokens: 4, nobles: 3 },
   3: { tokens: 5, nobles: 4 },
   4: { tokens: 7, nobles: 5 },
 };
-const JOKER_TOKENS = 5;     // Altın / joker jeton her zaman 5
-const NOBLE_POINTS = 3;     // Her soylu 3 puan
-const MAX_RESERVED = 3;     // En fazla 3 ayrılmış kart
-const MAX_TOKENS = 10;      // Tur sonunda en fazla 10 jeton
+const GOLD_TOKENS = 5;
+const NOBLE_POINTS = 3;
+const MAX_RESERVED = 3;
+const MAX_TOKENS = 10;
 const DEFAULT_TARGET = 15;
-const LEVEL_POINTS = { 1: [0, 1], 2: [1, 2, 3], 3: [3, 4, 5] }; // Seviyelere göre olası kart puanları
+const LEVEL_POINTS = { 1: [0, 1], 2: [1, 2, 3], 3: [3, 4, 5] };
+const LEVEL_ROMAN = ['', 'I', 'II', 'III'];
 
-const GEM_VARS = ['--g0', '--g1', '--g2', '--g3', '--g4'];
-const DEFAULT_GEMS = ['Uzay', 'Zihin', 'Gerçeklik', 'Güç', 'Ruh'];
-const DEFAULT_JOKER = 'Zaman';
-const HERO_NAMES = ['Iron Man', 'Captain America', 'Thor', 'Black Widow'];
-const STORE_KEY = 'marvel-splendor-sayac-v1';
+const GEMS = ['Beyaz', 'Mavi', 'Yeşil', 'Kırmızı', 'Siyah'];
+const GEM_HEX = ['#e9eef4', '#2f7cf6', '#19b46a', '#e5363f', '#3a3742'];
+const GEM_GLOW = ['#ffffff', '#5b9bff', '#3ee08f', '#ff5a63', '#9a93ad']; // koyu taşların parlaması görünsün
+const PLAYER_COLORS = ['#ff4d6d', '#38d1ff', '#ffb547', '#b48cff'];
+const STORE_KEY = 'splendor-sayac-v2';
 
 /* ===================== Durum ===================== */
 
 let state = load() || freshState();
-let history = [];       // geri al için anlık görüntüler
-let modal = null;       // açık pencere
+let history = [];
+let modal = null;
+let tab = 'table';
+let shownScore = {};   // animasyon başlangıç değerleri
 let toastTimer = null;
+let lastView = '';
 
 function freshState(prev) {
   return {
     phase: 'setup',
-    settings: prev ? prev.settings : {
-      count: 2,
-      target: DEFAULT_TARGET,
-      gems: DEFAULT_GEMS.slice(),
-      joker: DEFAULT_JOKER,
-      avengers: false,
-    },
-    names: prev ? prev.names : HERO_NAMES.slice(),
+    count: prev ? prev.count : 2,
+    target: prev ? prev.target : DEFAULT_TARGET,
+    names: prev ? prev.names : ['', '', '', ''],
+    first: 0,
     players: [],
     nobles: [],
-    avengersOwner: null,
-    turn: { cur: 0, round: 1, first: 0 },
+    turn: { cur: 0, round: 1, n: 0 },
     finalRound: false,
+    timeline: [],
     log: [],
   };
 }
-
 function load() {
-  try {
-    const raw = localStorage.getItem(STORE_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch (e) { return null; }
+  try { const r = localStorage.getItem(STORE_KEY); return r ? JSON.parse(r) : null; } catch (e) { return null; }
 }
 function save() {
-  try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) { /* depolama yoksa sorun değil */ }
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) { /* depolama yoksa da çalışır */ }
 }
-
 function snapshot() {
   history.push(JSON.stringify(state));
-  if (history.length > 200) history.shift();
+  if (history.length > 300) history.shift();
 }
 function undo() {
   if (!history.length) return;
@@ -212,373 +478,489 @@ function undo() {
   render();
   toast('Son işlem geri alındı');
 }
+function buzz(ms) { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} }
 
-/* ===================== Hesaplamalar ===================== */
+/* ===================== Hesaplar ===================== */
 
-const gemName = i => state.settings.gems[i] || DEFAULT_GEMS[i];
-const gemColor = i => `var(${GEM_VARS[i]})`;
+const playerName = i => (state.names[i] || '').trim() || `Oyuncu ${i + 1}`;
+const initial = name => [...name.trim()][0]?.toLocaleUpperCase('tr') || '?';
 
 function bonuses(p) {
   const b = [0, 0, 0, 0, 0];
   p.cards.forEach(c => b[c.gem]++);
   return b;
 }
-function cardPoints(p) { return p.cards.reduce((s, c) => s + c.pts, 0); }
-function noblePoints(pi) {
-  return state.nobles.filter(n => n.owner === pi).reduce((s, n) => s + n.pts, 0);
-}
-function avengersPoints(pi) { return state.settings.avengers && state.avengersOwner === pi ? 3 : 0; }
-function score(pi) {
-  const p = state.players[pi];
-  return cardPoints(p) + noblePoints(pi) + avengersPoints(pi) + p.adj;
-}
-function hasReq(n) { return n.req.some(v => v > 0); }
+const cardPoints = p => p.cards.reduce((s, c) => s + c.pts, 0);
+const nobleCount = pi => state.nobles.filter(n => n.owner === pi).length;
+const noblePoints = pi => nobleCount(pi) * NOBLE_POINTS;
+const score = pi => cardPoints(state.players[pi]) + noblePoints(pi) + state.players[pi].adj;
+const hasReq = n => n.req.some(v => v > 0);
 function meetsNoble(pi, n) {
   const b = bonuses(state.players[pi]);
   return hasReq(n) && n.req.every((v, i) => b[i] >= v);
 }
-function missingFor(pi, n) {
+function nobleProgress(pi, n) {
   const b = bonuses(state.players[pi]);
-  return n.req.reduce((s, v, i) => s + Math.max(0, v - b[i]), 0);
+  const need = n.req.reduce((s, v) => s + v, 0);
+  const have = n.req.reduce((s, v, i) => s + Math.min(v, b[i]), 0);
+  return { need, have, missing: need - have };
 }
 
 /* ===================== Oyun akışı ===================== */
 
-function startNobleSetup() {
-  const s = state.settings;
-  state.players = Array.from({ length: s.count }, (_, i) => ({
-    name: (state.names[i] || '').trim() || `Oyuncu ${i + 1}`,
-    cards: [], reserved: 0, adj: 0,
+function toNobles() {
+  state.players = Array.from({ length: state.count }, (_, i) => ({
+    name: playerName(i), color: PLAYER_COLORS[i], cards: [], reserved: 0, adj: 0,
   }));
-  state.nobles = Array.from({ length: SETUP[s.count].nobles }, (_, i) => ({
-    id: i, req: [0, 0, 0, 0, 0], pts: NOBLE_POINTS, owner: null,
-  }));
+  state.nobles = Array.from({ length: SETUP[state.count].nobles }, (_, i) => ({ id: i, req: [0, 0, 0, 0, 0], owner: null }));
   state.phase = 'nobles';
   render();
 }
 
 function startGame() {
   state.phase = 'game';
-  state.turn = { cur: state.turn.first, round: 1, first: state.turn.first };
+  state.turn = { cur: state.first, round: 1, n: 0 };
   state.finalRound = false;
   state.log = [];
-  state.avengersOwner = null;
+  state.timeline = [state.players.map(() => 0)];
   history = [];
-  addLog(`Oyun başladı — ${state.players.length} oyuncu, hedef ${state.settings.target} puan`);
+  shownScore = {};
+  tab = 'table';
+  addLog('Oyun başladı', null);
   render();
+  turnFlash();
 }
 
-function addLog(text) {
-  state.log.unshift(`T${state.turn.round} · ${text}`);
-  if (state.log.length > 300) state.log.pop();
+function addLog(text, pi) {
+  state.log.unshift({ r: state.turn.round, pi, text });
+  if (state.log.length > 400) state.log.pop();
 }
 
 function act(kind, card) {
   snapshot();
+  buzz(18);
   const pi = state.turn.cur;
   const p = state.players[pi];
-  if (kind === 'tokens') {
-    addLog(`${p.name} jeton aldı`);
-  } else if (kind === 'reserve') {
+  if (kind === 'tokens') addLog('Jeton aldı', pi);
+  else if (kind === 'reserve') {
     p.reserved = Math.min(MAX_RESERVED, p.reserved + 1);
-    addLog(`${p.name} kart ayırdı (${p.reserved}/${MAX_RESERVED})`);
+    addLog(`Kart ayırdı (${p.reserved}/${MAX_RESERVED})`, pi);
   } else if (kind === 'buy') {
     p.cards.push({ lvl: card.lvl, gem: card.gem, pts: card.pts });
     if (card.fromReserve && p.reserved > 0) p.reserved--;
-    addLog(`${p.name} ${card.lvl}. seviye ${gemName(card.gem)} kartı aldı${card.pts ? ` (+${card.pts})` : ''}${card.fromReserve ? ' [ayrılmış]' : ''}`);
+    addLog(`${LEVEL_ROMAN[card.lvl]}. seviye ${GEMS[card.gem].toLocaleLowerCase('tr')} kart aldı${card.pts ? ` · +${card.pts}` : ''}${card.fromReserve ? ' · ayrılmıştan' : ''}`, pi);
   }
   modal = null;
   nobleCheck(pi);
 }
 
-// Tur sonu: soylu ziyareti kontrolü (turda en fazla bir soylu gelir)
+// Tur sonu soylu ziyareti: şartı sağlanan soylu otomatik gelir, turda en fazla bir tane
 function nobleCheck(pi) {
-  const eligible = state.nobles.filter(n => n.owner === null && meetsNoble(pi, n));
-  if (eligible.length === 1) {
-    giveNoble(pi, eligible[0].id);
-    finishTurn();
-  } else if (eligible.length > 1) {
-    modal = { type: 'chooseNoble', pi, ids: eligible.map(n => n.id) };
-    render();
-  } else {
-    finishTurn();
-  }
+  const ok = state.nobles.filter(n => n.owner === null && meetsNoble(pi, n));
+  if (ok.length === 1) { giveNoble(pi, ok[0].id); finishTurn(true); }
+  else if (ok.length > 1) { modal = { type: 'chooseNoble', pi, ids: ok.map(n => n.id) }; render(); }
+  else finishTurn();
 }
 
 function giveNoble(pi, id) {
-  const n = state.nobles.find(x => x.id === id);
-  n.owner = pi;
-  addLog(`👑 Soylu ${id + 1}, ${state.players[pi].name} oyuncusunu ziyaret etti (+${n.pts})`);
-  toast(`👑 ${state.players[pi].name}: Soylu ${id + 1} geldi! +${n.pts}`);
+  state.nobles[id].owner = pi;
+  addLog(`Soylu ${id + 1} ziyaret etti · +${NOBLE_POINTS}`, pi);
+  celebrateNoble(pi);
 }
 
-function finishTurn() {
+function finishTurn(quiet) {
   const n = state.players.length;
   const pi = state.turn.cur;
-  if (!state.finalRound && score(pi) >= state.settings.target) {
+  state.turn.n++;
+  state.timeline.push(state.players.map((_, i) => score(i)));
+  let reached = false;
+  if (!state.finalRound && score(pi) >= state.target) {
     state.finalRound = true;
-    addLog(`🔥 ${state.players[pi].name} ${score(pi)} puana ulaştı — son tur!`);
-    toast(`🔥 ${state.players[pi].name} ${state.settings.target}+ puan! Tur tamamlanınca oyun biter.`);
+    reached = true;
+    addLog(`${score(pi)} puana ulaştı — son tur!`, pi);
   }
   state.turn.cur = (pi + 1) % n;
-  if (state.turn.cur === state.turn.first) {
+  if (state.turn.cur === state.first) {
     if (state.finalRound) { endGame(); return; }
     state.turn.round++;
   }
   render();
+  if (reached) toast(`${state.players[pi].name} ${state.target} puanı geçti! Tur tamamlanınca oyun biter.`);
+  if (!quiet) turnFlash();
 }
 
 function endGame() {
   state.phase = 'over';
-  addLog('Oyun bitti');
+  addLog('Oyun bitti', null);
   render();
+  const w = standings()[0];
+  setTimeout(() => confetti([state.players[w.i].color, '#f2c35b', '#ffe7a3', '#ffffff']), 250);
+  buzz([30, 60, 30]);
 }
 
-// Sıralama: en yüksek puan; eşitlikte en az kart satın alan kazanır
+// Puan → eşitlikte en az satın alınan kart
 function standings() {
   return state.players.map((p, i) => ({ i, p, s: score(i), c: p.cards.length }))
     .sort((a, b) => b.s - a.s || a.c - b.c);
 }
 
-/* ===================== Görünümler ===================== */
+/* ===================== Görsel parçalar ===================== */
 
-const h = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const dot = i => `<span class="gem" style="color:${gemColor(i)};background:${gemColor(i)}"></span>`;
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const gem = (i, cls = '') => `<svg class="gem ${cls}" style="color:${GEM_HEX[i]}"><use href="#gem"/></svg>`;
+const coin = (cls = '') => `<svg class="gem ${cls}"><use href="#coin"/></svg>`;
+const icon = (id, cls = '') => `<svg class="${cls}"><use href="#${id}"/></svg>`;
+const avatar = (p, cls = '') => `<span class="avatar ${cls}" style="--pc:${p.color}">${esc(initial(p.name))}</span>`;
 
-function render() {
-  save();
-  const app = document.getElementById('app');
-  if (state.phase === 'setup') app.innerHTML = viewSetup();
-  else if (state.phase === 'nobles') app.innerHTML = viewNobleSetup();
-  else if (state.phase === 'game') app.innerHTML = viewGame();
-  else app.innerHTML = viewOver();
-  app.insertAdjacentHTML('beforeend', modal ? viewModal() : '');
-}
-
-function refTable(count) {
-  const r = SETUP[count];
-  return `<table class="ref">
-    <tr><td>Her renk taş jetonu (${state.settings.gems.map(h).join(', ')})</td><td>${r.tokens} adet</td></tr>
-    <tr><td><span class="gem" style="color:var(--gj);background:var(--gj)"></span>${h(state.settings.joker)} (joker)</td><td>${JOKER_TOKENS} adet</td></tr>
-    <tr><td>Açılacak soylu kartı</td><td>${r.nobles} adet</td></tr>
-    <tr><td>Her seviyeden açık kart</td><td>4 adet</td></tr>
-    <tr><td>Bitiş eşiği</td><td>${state.settings.target} puan</td></tr>
-  </table>`;
-}
-
-function viewSetup() {
-  const s = state.settings;
-  return `
-  <h1><span>MARVEL</span> Splendor</h1>
-  <p class="sub">Puan sayacı · tur takibi · soylu kontrolü</p>
-
-  <section class="panel">
-    <h2>Kaç kişi oynuyor?</h2>
-    <div class="seg">
-      ${[2, 3, 4].map(n => `<button class="big-choice ${s.count === n ? 'sel' : ''}" data-act="count" data-v="${n}">${n}<small>${SETUP[n].nobles} soylu · ${SETUP[n].tokens} jeton</small></button>`).join('')}
-    </div>
-  </section>
-
-  <section class="panel">
-    <h2>Oyuncular</h2>
-    ${Array.from({ length: s.count }, (_, i) => `
-      <div class="row" style="margin-bottom:8px">
-        <input type="text" maxlength="20" value="${h(state.names[i] || '')}" placeholder="Oyuncu ${i + 1}" data-name="${i}" class="grow" style="width:auto">
-        <button class="small ${state.turn.first === i ? 'gold' : ''}" data-act="first" data-v="${i}" title="İlk oyuncu">${state.turn.first === i ? '★ İlk' : 'İlk'}</button>
-      </div>`).join('')}
-    <div class="row"><button class="small ghost" data-act="randfirst">🎲 İlk oyuncuyu rastgele seç</button></div>
-    <p class="tip">Kurala göre en genç oyuncu başlar. Son tur, ilk oyuncunun solundaki (sağ sıradaki son) oyuncuyla biter.</p>
-  </section>
-
-  <section class="panel">
-    <h2>Kurulum</h2>
-    ${refTable(s.count)}
-  </section>
-
-  <section class="panel">
-    <details>
-      <summary>Ayarlar (hedef puan, taş adları, Avengers jetonu)</summary>
-      <div class="lbl tip">Hedef puan (bitişi tetikler)</div>
-      <input type="number" min="5" max="40" value="${s.target}" data-set="target">
-      <div class="lbl tip">Taş adları (kendi versiyonuna göre değiştir)</div>
-      <div class="row">
-        ${s.gems.map((g, i) => `<div class="row" style="flex:1 1 140px">${dot(i)}<input type="text" class="grow" style="width:auto" maxlength="14" value="${h(g)}" data-gem="${i}"></div>`).join('')}
-        <div class="row" style="flex:1 1 140px"><span class="gem" style="color:var(--gj);background:var(--gj)"></span><input type="text" class="grow" style="width:auto" maxlength="14" value="${h(s.joker)}" data-set="joker"></div>
-      </div>
-      <div class="lbl"></div>
-      <label class="chk"><input type="checkbox" data-set="avengers" ${s.avengers ? 'checked' : ''}> Avengers jetonu kullan (+3 puan, el değiştirebilir)</label>
-      <p class="tip">Splendor Marvel kurallarında hedef 16 puandır ve Avengers jetonu vardır. Kendi versiyonunda klasik kural (15) geçerliyse ayarı olduğu gibi bırak.</p>
-    </details>
-  </section>
-
-  <button class="primary" style="width:100%;padding:14px" data-act="toNobles">Devam: Soylu kartları →</button>
-  `;
-}
-
-function viewNobleSetup() {
-  return `
-  <h1><span>MARVEL</span> Splendor</h1>
-  <p class="sub">Masadaki ${state.nobles.length} soylu kartının gereksinimlerini gir. Sayaç, bir oyuncu bir soylunun şartını sağladığında tur sonunda otomatik verir ve kime ne kadar kaldığını gösterir.</p>
-  ${state.nobles.map(n => `
-    <section class="panel">
-      <div class="row" style="justify-content:space-between;margin-bottom:8px">
-        <b>👑 Soylu ${n.id + 1}</b>
-        <span class="muted">${n.pts} puan</span>
-      </div>
-      <div class="reqgrid">
-        ${n.req.map((v, i) => `<div class="cell" style="border-color:${gemColor(i)}">
-          <button data-act="req" data-n="${n.id}" data-g="${i}" data-d="1">＋</button>
-          <b>${v}</b>
-          <button data-act="req" data-n="${n.id}" data-g="${i}" data-d="-1">－</button>
-          <span class="muted" style="font-size:10px">${h(gemName(i))}</span>
-        </div>`).join('')}
-      </div>
-      <div class="row" style="margin-top:8px">
-        <span class="muted" style="font-size:13px">Hızlı:</span>
-        <button class="small" data-act="reqclear" data-n="${n.id}">Temizle</button>
-      </div>
-    </section>`).join('')}
-  <p class="tip">Klasik soylular ya iki renkten 4'er ya da üç renkten 3'er kart ister. Gereksinimini girmediğin soyluyu oyun sırasında elle verebilirsin.</p>
-  <div class="row" style="margin-top:12px">
-    <button class="ghost" data-act="backSetup">← Geri</button>
-    <button class="primary grow" style="padding:14px" data-act="start">Oyunu başlat</button>
+function ring(pi) {
+  const s = score(pi), t = state.target;
+  const R = 34, C = 2 * Math.PI * R;
+  const from = shownScore[pi] ?? 0;
+  const off = v => C * (1 - Math.min(1, v / t));
+  return `<div class="ring" style="--pc:${state.players[pi].color}">
+    <svg viewBox="0 0 78 78">
+      <circle cx="39" cy="39" r="${R}" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="6"/>
+      <circle class="prog" cx="39" cy="39" r="${R}" fill="none" stroke="${state.players[pi].color}" stroke-width="6" stroke-linecap="round"
+        stroke-dasharray="${C}" stroke-dashoffset="${off(from)}" data-to="${off(s)}"/>
+    </svg>
+    <div class="val"><div><b data-count="${s}" data-from="${from}">${from}</b><small>/ ${t}</small></div></div>
   </div>`;
 }
 
-function playerCard(p, i) {
-  const s = state.settings;
-  const sc = score(i);
-  const b = bonuses(p);
+function track() {
+  const t = state.target;
+  const max = Math.max(t, ...state.players.map((_, i) => score(i)));
+  const pos = v => (Math.min(v, max) / max * 100).toFixed(2);
+  const ticks = [0, Math.round(t / 3), Math.round(2 * t / 3), t].map(v => `<span class="tick" style="left:${pos(v)}%">${v}</span>`).join('');
+  // aynı puandaki oyuncular üst üste binmesin
+  const seen = {};
+  const pins = state.players.map((p, i) => {
+    const s = score(i), k = seen[s] = (seen[s] || 0) + 1;
+    return `<div class="pin" style="--pc:${p.color};left:${pos(shownScore[i] ?? 0)}%;top:${(k - 1) * -6}px;z-index:${10 - k}" data-left="${pos(s)}">${avatar(p)}</div>`;
+  }).join('');
+  return `<div class="glass" style="padding:14px 18px 6px">
+    <div class="row"><span class="eyebrow" style="margin:0">Zafer yolu</span><span class="grow"></span><span class="muted" style="font-size:12px">Hedef ${t}</span></div>
+    <div class="track">
+      <div class="rail"><i></i></div>
+      ${ticks}
+      <svg class="flag" viewBox="0 0 18 22"><path d="M2 1v20" stroke="#f2c35b" stroke-width="2"/><path d="M3 2h13l-3 4 3 4H3z" fill="#f2c35b"/></svg>
+      ${pins}
+    </div>
+  </div>`;
+}
+
+function playerPanel(p, i) {
   const active = state.phase === 'game' && state.turn.cur === i;
-  const myNobles = state.nobles.filter(n => n.owner === i);
-  const pct = Math.min(100, sc / s.target * 100);
-  const lvls = [1, 2, 3].map(l => p.cards.filter(c => c.lvl === l).length);
-  return `
-  <article class="pcard ${active ? 'active' : ''}">
-    <div class="top">
-      <div>
-        <div class="name">${h(p.name)}${state.turn.first === i ? '<span class="first">İLK</span>' : ''}</div>
-        <div class="muted" style="font-size:12px">Kart ${cardPoints(p)} · Soylu ${noblePoints(i)}${s.avengers ? ` · Avengers ${avengersPoints(i)}` : ''}${p.adj ? ` · Düzeltme ${p.adj > 0 ? '+' : ''}${p.adj}` : ''}</div>
+  const b = bonuses(p);
+  const lv = [1, 2, 3].map(l => p.cards.filter(c => c.lvl === l).length);
+  const crowns = nobleCount(i);
+  return `<article class="glass player ${active ? 'active' : ''}" style="--pc:${p.color}">
+    <div class="phead">
+      ${avatar(p)}
+      <div style="min-width:0">
+        <div class="pname">${esc(p.name)}${state.first === i ? '<span class="chip first">İLK</span>' : ''}${active ? '<span class="chip turn">SIRA</span>' : ''}</div>
+        <div class="breakdown">Kart ${cardPoints(p)} · Soylu ${noblePoints(i)}${p.adj ? ` · Düzeltme ${p.adj > 0 ? '+' : ''}${p.adj}` : ''}</div>
       </div>
-      <div class="score"><b>${sc}</b><div class="of">/ ${s.target}</div></div>
+      ${ring(i)}
     </div>
-    <div class="bar"><i style="width:${pct}%"></i></div>
-    <div class="bonuses">
-      ${b.map((v, g) => `<div class="bonus" style="border-color:${gemColor(g)}"><b>${v}</b><span>${h(gemName(g))}</span></div>`).join('')}
+    <div class="bonusrow">
+      ${b.map((v, g) => `<div class="bonus ${v ? '' : 'zero'}">${gem(g)}<b>${v}</b></div>`).join('')}
     </div>
-    <div class="facts">
-      <span>Kart: <b>${p.cards.length}</b> <span class="muted">(${lvls.join('/')})</span></span>
-      <span class="${p.reserved >= MAX_RESERVED ? 'warn' : ''}">Ayrılmış: <b>${p.reserved}/${MAX_RESERVED}</b></span>
-      ${s.avengers && state.avengersOwner === i ? '<span class="warn">🛡️ Avengers</span>' : ''}
+    <div class="meta">
+      <div class="stacks" title="Seviyelere göre kartlar">
+        ${lv.map((c, k) => `<div class="stack"><div class="pile" style="height:${3 + Math.min(c, 10) * 2.2}px"></div><span>${LEVEL_ROMAN[k + 1]}·${c}</span></div>`).join('')}
+      </div>
+      <span><b>${p.cards.length}</b> kart</span>
+      <span class="slots" title="Ayrılmış kartlar">${[0, 1, 2].map(k => `<i class="${k < p.reserved ? 'on' : ''}"></i>`).join('')}</span>
+      ${crowns ? `<span class="crowns">${Array.from({ length: crowns }, () => icon('crown')).join('')}</span>` : ''}
     </div>
-    ${myNobles.length ? `<div class="nobleline">👑 ${myNobles.map(n => `Soylu ${n.id + 1}`).join(', ')}</div>` : ''}
-    ${active ? `
-      <div class="actions">
-        <button data-act="tokens">💎 Jeton aldı</button>
-        <button data-act="reserve" ${p.reserved >= MAX_RESERVED ? 'disabled' : ''}>📌 Kart ayırdı</button>
-        <button class="primary wide" data-act="openBuy">🃏 Kart satın aldı</button>
-      </div>` : ''}
-    <div class="row" style="margin-top:8px;justify-content:flex-end">
-      <button class="small ghost" data-act="edit" data-v="${i}">✏️ Düzenle</button>
-    </div>
+    ${active ? `<div class="acts">
+      <button class="act" data-act="tokens">${icon('i-tokens')}<span>Jeton aldı<small>3 farklı / 2 aynı</small></span></button>
+      <button class="act" data-act="reserve" ${p.reserved >= MAX_RESERVED ? 'disabled' : ''}>${icon('i-reserve')}<span>Kart ayırdı<small>${p.reserved}/${MAX_RESERVED} · +1 altın</small></span></button>
+      <button class="act buy btn-gold" data-act="openBuy">${icon('i-buy')}Kart satın aldı</button>
+    </div>` : ''}
+    <div class="pfoot"><button class="btn-ghost" data-act="edit" data-v="${i}">Düzenle</button></div>
   </article>`;
 }
 
-function viewNobles() {
-  const n = state.players.length;
-  return `<section class="panel">
-    <h2>👑 Soylular</h2>
-    <div class="nobles">
-      ${state.nobles.map(nb => {
-        const owner = nb.owner !== null ? state.players[nb.owner].name : null;
-        let near = '';
-        if (!owner && hasReq(nb)) {
-          const close = state.players.map((p, i) => ({ name: p.name, m: missingFor(i, nb) }))
-            .sort((a, b) => a.m - b.m);
-          near = `<div class="near">${close.slice(0, n).map(c => `${h(c.name)}: <b style="color:var(--text)">${c.m}</b> eksik`).join('<br>')}</div>`;
-        }
-        return `<div class="noble ${owner ? 'taken' : ''}">
-          <div class="nt"><span>Soylu ${nb.id + 1}</span><span>${nb.pts}★</span></div>
-          ${hasReq(nb) ? `<div class="reqs">${nb.req.map((v, g) => v ? `<span class="req" style="background:${gemColor(g)}">${v}</span>` : '').join('')}</div>` : '<div class="muted">Gereksinim girilmedi</div>'}
-          ${owner ? `<div class="near">✔ ${h(owner)}</div>` : near}
-        </div>`;
-      }).join('')}
-    </div>
+function nobleTiles() {
+  return `<div class="nobles">${state.nobles.map(n => {
+    const owner = n.owner !== null ? state.players[n.owner] : null;
+    let bottom;
+    if (owner) bottom = `<div class="owner">${avatar(owner, 'sm')}${esc(owner.name)}</div>`;
+    else if (hasReq(n)) bottom = `<div class="prog">${state.players.map((p, i) => {
+      const pr = nobleProgress(i, n);
+      return `<div class="pb" style="--pc:${p.color}" title="${esc(p.name)}: ${pr.missing} eksik"><i style="width:${pr.have / pr.need * 100}%"></i></div>`;
+    }).join('')}</div>`;
+    else bottom = `<div class="unknown">Gereksinim girilmedi — elle verilebilir</div>`;
+    return `<div class="noble ${owner ? 'taken' : ''}">
+      <svg class="crown-bg"><use href="#crown"/></svg>
+      <div class="pts">${NOBLE_POINTS}</div>
+      <div class="reqs">${n.req.map((v, g) => v ? `<span class="req">${gem(g)}${v}</span>` : '').join('')}</div>
+      ${bottom}
+    </div>`;
+  }).join('')}</div>`;
+}
+
+/* ---------- Grafikler ---------- */
+
+function lineChart() {
+  const tl = state.timeline;
+  const W = 340, H = 190, L = 26, R = 12, T = 12, B = 24;
+  const n = Math.max(1, tl.length - 1);
+  const maxY = Math.max(state.target, ...tl.flat()) + 1;
+  const x = k => L + (W - L - R) * k / n;
+  const y = v => T + (H - T - B) * (1 - v / maxY);
+  const pc = state.players.length;
+  let grid = '';
+  for (let v = 0; v <= maxY; v += 5) grid += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="rgba(255,255,255,.06)"/><text x="${L - 6}" y="${y(v) + 3}" text-anchor="end">${v}</text>`;
+  // tur ayraçları
+  const rounds = Math.ceil((tl.length - 1) / pc);
+  for (let r = 1; r <= rounds; r++) {
+    const k = r * pc;
+    if (k <= n && (rounds <= 12 || r % Math.ceil(rounds / 10) === 0)) grid += `<text x="${x(k)}" y="${H - 6}" text-anchor="middle">T${r}</text>`;
+  }
+  const goal = `<line x1="${L}" x2="${W - R}" y1="${y(state.target)}" y2="${y(state.target)}" stroke="#f2c35b" stroke-dasharray="4 4" stroke-opacity=".7"/>
+    <text x="${W - R}" y="${y(state.target) - 5}" text-anchor="end" style="fill:#f2c35b">hedef</text>`;
+  const lines = state.players.map((p, i) => {
+    const pts = tl.map((row, k) => [x(k), y(row[i])]);
+    // basamaklı çizgi: puan yalnızca oyuncunun kendi sırasında değişir
+    let d = `M${pts[0][0]},${pts[0][1]}`;
+    for (let k = 1; k < pts.length; k++) d += ` H${pts[k][0]} V${pts[k][1]}`;
+    let len = 0;
+    for (let k = 1; k < pts.length; k++) len += Math.abs(pts[k][0] - pts[k - 1][0]) + Math.abs(pts[k][1] - pts[k - 1][1]);
+    const last = pts[pts.length - 1];
+    const area = `${d} V${y(0)} H${pts[0][0]} Z`;
+    return `<path d="${area}" fill="url(#ag${i})" opacity=".55"/>
+      <path class="line" d="${d}" stroke="${p.color}" style="--len:${Math.ceil(len) + 2}" filter="url(#glow)"/>
+      <circle cx="${last[0]}" cy="${last[1]}" r="4" fill="${p.color}" stroke="#07060b" stroke-width="2"/>`;
+  }).join('');
+  const defs = `<defs>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    ${state.players.map((p, i) => `<linearGradient id="ag${i}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${p.color}" stop-opacity=".22"/><stop offset="1" stop-color="${p.color}" stop-opacity="0"/></linearGradient>`).join('')}
+  </defs>`;
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}">${defs}${grid}${goal}${lines}</svg>`;
+}
+
+function radarChart() {
+  const S = 300, c = S / 2, R = 112;
+  const all = state.players.map(bonuses);
+  const max = Math.max(4, ...all.flat());
+  const ang = k => -Math.PI / 2 + k * 2 * Math.PI / 5;
+  const pt = (k, v) => [c + Math.cos(ang(k)) * R * v / max, c + Math.sin(ang(k)) * R * v / max];
+  let web = '';
+  for (let s = 1; s <= 4; s++) {
+    web += `<polygon points="${[0, 1, 2, 3, 4].map(k => pt(k, max * s / 4).join(',')).join(' ')}" fill="none" stroke="rgba(255,255,255,${s === 4 ? .14 : .06})"/>`;
+  }
+  const axes = [0, 1, 2, 3, 4].map(k => {
+    const [ex, ey] = pt(k, max);
+    const [gx, gy] = pt(k, max * 1.2);
+    return `<line x1="${c}" y1="${c}" x2="${ex}" y2="${ey}" stroke="rgba(255,255,255,.08)"/>
+      <use href="#gem" x="${gx - 12}" y="${gy - 12}" width="24" height="24" style="color:${GEM_HEX[k]}"/>`;
+  }).join('');
+  const shapes = state.players.map((p, i) => {
+    const poly = all[i].map((v, k) => pt(k, v).join(',')).join(' ');
+    return `<polygon points="${poly}" fill="${p.color}" fill-opacity=".16" stroke="${p.color}" stroke-width="2.2" stroke-linejoin="round" filter="url(#glow2)" style="transform-origin:${c}px ${c}px;animation:pop .9s var(--ease) ${i * .12}s both"/>`;
+  }).join('');
+  return `<svg class="chart" viewBox="-20 -20 ${S + 40} ${S + 40}" style="max-width:360px;margin:0 auto">
+    <defs><filter id="glow2"><feGaussianBlur stdDeviation="1.6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+    ${web}${axes}${shapes}</svg>`;
+}
+
+function legend() {
+  return `<div class="legend">${state.players.map((p, i) => `<span style="--pc:${p.color}"><i></i>${esc(p.name)} · ${score(i)}</span>`).join('')}</div>`;
+}
+
+function statsView() {
+  const ps = state.players;
+  const eff = ps.map((p, i) => ({ p, v: p.cards.length ? cardPoints(p) / p.cards.length : 0 }));
+  const bestEff = eff.slice().sort((a, b) => b.v - a.v)[0];
+  const mostCards = ps.slice().sort((a, b) => b.cards.length - a.cards.length)[0];
+  const mostNobles = ps.map((p, i) => ({ p, v: nobleCount(i) })).sort((a, b) => b.v - a.v)[0];
+  const leader = standings()[0];
+  const maxScore = Math.max(1, ...ps.map((_, i) => score(i)));
+  const statCard = (k, v, p) => `<div class="stat"><div class="k">${k}</div><div class="v">${v}</div>${p ? `<div class="who">${avatar(p, 'sm')}${esc(p.name)}</div>` : ''}</div>`;
+  return `
+  <section class="glass">
+    <p class="eyebrow">Puan akışı</p>
+    ${lineChart()}
+    ${legend()}
+  </section>
+  <section class="glass">
+    <p class="eyebrow">Bonus dağılımı (indirim gücü)</p>
+    ${radarChart()}
+    ${legend()}
+    <p class="tip">Kartlar kalıcı indirim sağlar. Geniş ve dengeli şekil, pahalı kartları ve soyluları kolay alan oyuncudur.</p>
+  </section>
+  <section class="glass">
+    <p class="eyebrow">Puan kaynakları</p>
+    <div class="bars">${ps.map((p, i) => {
+      const c = cardPoints(p), n = noblePoints(i), s = score(i);
+      return `<div class="barrow"><span class="nm">${esc(p.name)}</span>
+        <div class="b"><i style="width:${Math.max(0, c) / maxScore * 100}%;background:${p.color}"></i><i style="width:${n / maxScore * 100}%;background:repeating-linear-gradient(45deg,#f2c35b 0 4px,#c99532 4px 8px)"></i></div>
+        <b style="text-align:right">${s}</b></div>`;
+    }).join('')}</div>
+    <div class="legend"><span><i style="--pc:#ccc"></i>Kart puanı (oyuncu rengi)</span><span><i style="--pc:#f2c35b"></i>Soylu puanı</span></div>
+  </section>
+  <section class="statgrid" style="margin-bottom:14px">
+    ${statCard('Önde', `${leader.s} puan`, leader.p)}
+    ${statCard('En verimli (puan/kart)', bestEff.v.toFixed(2), bestEff.v ? bestEff.p : null)}
+    ${statCard('En çok kart', mostCards.cards.length, mostCards.cards.length ? mostCards : null)}
+    ${statCard('En çok soylu', mostNobles.v, mostNobles.v ? mostNobles.p : null)}
   </section>`;
+}
+
+function logView() {
+  return `<section class="glass">
+    <p class="eyebrow">Oyun kaydı · ${state.log.length}</p>
+    <ul class="log">${state.log.map(l => {
+      const p = l.pi !== null && l.pi !== undefined ? state.players[l.pi] : null;
+      return `<li><span class="t">T${l.r}</span>${p ? avatar(p, 'sm') : ''}<span>${p ? `<b>${esc(p.name)}</b> · ` : ''}${esc(l.text)}</span></li>`;
+    }).join('')}</ul>
+  </section>`;
+}
+
+/* ===================== Ekranlar ===================== */
+
+function viewSetup() {
+  const n = state.count;
+  return `
+  <header class="brand"><div class="word">SPLENDOR</div><div class="tag">Puan Sayacı</div></header>
+
+  <section class="glass">
+    <p class="eyebrow">Oyuncu sayısı</p>
+    <div class="counts">${[2, 3, 4].map(k => `
+      <button class="count ${n === k ? 'sel' : ''}" data-act="count" data-v="${k}">
+        <span class="n">${k}</span>
+        <span class="dots">${'<i></i>'.repeat(k)}</span>
+        <small>${SETUP[k].nobles} soylu · ${SETUP[k].tokens} jeton</small>
+      </button>`).join('')}
+    </div>
+  </section>
+
+  <section class="glass">
+    <p class="eyebrow">Oyuncular</p>
+    ${Array.from({ length: n }, (_, i) => `
+      <div class="seat">
+        <span class="avatar" style="--pc:${PLAYER_COLORS[i]}">${esc(initial(playerName(i)))}</span>
+        <input type="text" maxlength="18" value="${esc(state.names[i] || '')}" placeholder="Oyuncu ${i + 1}" data-name="${i}">
+        <button class="first-btn ${state.first === i ? 'sel' : ''}" data-act="first" data-v="${i}">${state.first === i ? '★ Başlar' : 'Başlar'}</button>
+      </div>`).join('')}
+    <button class="btn-ghost" style="font-size:13px" data-act="randfirst">🎲 Başlayanı rastgele seç</button>
+    <p class="tip">Kurala göre en genç oyuncu başlar. Oyun sırası saat yönündedir.</p>
+  </section>
+
+  <section class="glass">
+    <p class="eyebrow">Masaya koy</p>
+    <div class="supply">
+      <div class="cell"><div class="gemrow">${[0, 1, 2, 3, 4].map(g => gem(g)).join('')}</div><b>${SETUP[n].tokens}</b><span>her renkten jeton</span></div>
+      <div class="cell"><div class="gemrow">${coin()}</div><b>${GOLD_TOKENS}</b><span>altın jeton</span></div>
+      <div class="cell"><div class="gemrow"><svg class="gem" style="color:var(--gold)"><use href="#crown"/></svg></div><b>${SETUP[n].nobles}</b><span>soylu karosu</span></div>
+    </div>
+    <p class="tip">Her seviyeden 4 kart açık dizilir. Tur sonunda elde en fazla ${MAX_TOKENS} jeton kalabilir.</p>
+    <div class="row" style="margin-top:14px">
+      <span class="grow">Bitiş puanı</span>
+      <span class="stepper"><button data-act="target" data-d="-1">−</button><output>${state.target}</output><button data-act="target" data-d="1">+</button></span>
+    </div>
+  </section>
+
+  <button class="btn-gold cta" data-act="toNobles">Soylu karolarına geç</button>`;
+}
+
+function viewNobles() {
+  return `
+  <header class="brand" style="padding-top:10px"><div class="tag">Adım 2 / 2</div></header>
+  <h2 style="text-align:center">Soylu karoları</h2>
+  <p class="tip" style="text-align:center;margin:4px 0 16px">Masadaki ${state.nobles.length} soylu karosunun istediği kart sayılarını gir. Şartı sağlayan oyuncuya soylu, tur sonunda kendiliğinden verilir.</p>
+  ${state.nobles.map(n => `
+    <section class="glass">
+      <div class="row">
+        <svg class="gem lg" style="color:var(--gold)"><use href="#crown"/></svg>
+        <b style="font-size:16px">Soylu ${n.id + 1}</b>
+        <span class="grow"></span>
+        <span class="muted" style="font-size:13px">${NOBLE_POINTS} puan</span>
+      </div>
+      <div class="noble-edit">${n.req.map((v, g) => `
+        <div class="col">
+          <button data-act="req" data-n="${n.id}" data-g="${g}" data-d="1">+</button>
+          ${gem(g, 'lg')}
+          <b>${v}</b>
+          <button data-act="req" data-n="${n.id}" data-g="${g}" data-d="-1">−</button>
+        </div>`).join('')}
+      </div>
+      <div class="presets"><button class="btn-ghost" data-act="reqclear" data-n="${n.id}">Temizle</button></div>
+    </section>`).join('')}
+  <p class="tip" style="text-align:center">Her soylu ya iki renkten 4'er ya da üç renkten 3'er kart ister. Girmek istemezsen boş bırak; oyunda elle verebilirsin.</p>
+  <div class="row" style="margin-top:16px">
+    <button class="btn-ghost" data-act="backSetup">Geri</button>
+    <button class="btn-gold cta grow" style="width:auto" data-act="start">Oyunu başlat</button>
+  </div>`;
 }
 
 function viewGame() {
   const cur = state.players[state.turn.cur];
-  const lastIdx = (state.turn.first + state.players.length - 1) % state.players.length;
-  return `
-  <div class="status">
-    <div class="row">
-      <div class="grow">
-        <div class="round">Tur ${state.turn.round} · Hedef ${state.settings.target}</div>
-        <div class="who">Sıra: ${h(cur.name)}</div>
+  const lastIdx = (state.first + state.players.length - 1) % state.players.length;
+  let body;
+  if (tab === 'stats') body = statsView();
+  else if (tab === 'log') body = logView();
+  else body = `
+    ${track()}
+    <div class="players">${state.players.map(playerPanel).join('')}</div>
+    <section class="glass" style="margin-top:14px">
+      <div class="row" style="margin-bottom:12px">
+        <p class="eyebrow" style="margin:0">Soylular</p><span class="grow"></span>
+        <button class="btn-ghost" style="font-size:12px;padding:7px 10px" data-act="manualNoble" ${state.nobles.some(n => n.owner === null) ? '' : 'disabled'}>Elle ver</button>
       </div>
-      <button class="small" data-act="undo" ${history.length ? '' : 'disabled'}>↶ Geri al</button>
-      <button class="small ghost" data-act="menu">☰</button>
+      ${nobleTiles()}
+      <p class="tip">Çubuklar her oyuncunun o soyluya ne kadar yaklaştığını gösterir.</p>
+    </section>`;
+  return `
+  <div class="hud">
+    <div class="now">
+      ${avatar(cur)}
+      <div class="grow" style="min-width:0">
+        <div class="round">Tur ${state.turn.round}</div>
+        <div class="who">${esc(cur.name)}</div>
+      </div>
+      <button class="btn-icon" data-act="undo" ${history.length ? '' : 'disabled'} aria-label="Geri al">${icon('i-undo')}</button>
+      <button class="btn-icon" data-act="menu" aria-label="Menü">${icon('i-menu')}</button>
     </div>
-    ${state.finalRound ? `<div class="banner">🔥 SON TUR — ${h(state.players[lastIdx].name)} oynadıktan sonra oyun biter</div>` : ''}
+    ${state.finalRound ? `<div class="final">SON TUR · ${esc(state.players[lastIdx].name)} oynadıktan sonra oyun biter</div>` : ''}
+    <div class="tabs">
+      <button class="${tab === 'table' ? 'on' : ''}" data-act="tab" data-t="table">Masa</button>
+      <button class="${tab === 'stats' ? 'on' : ''}" data-act="tab" data-t="stats">Grafikler</button>
+      <button class="${tab === 'log' ? 'on' : ''}" data-act="tab" data-t="log">Kayıt</button>
+    </div>
   </div>
-
-  <div class="players">${state.players.map(playerCard).join('')}</div>
-  <div style="height:12px"></div>
-  ${viewNobles()}
-
-  <section class="panel">
-    <div class="row">
-      <button class="grow" data-act="manualNoble" ${state.nobles.some(n => n.owner === null) ? '' : 'disabled'}>👑 ${h(cur.name)} için soylu ver (elle)</button>
-      ${state.settings.avengers ? `<button class="grow" data-act="avengers">🛡️ Avengers jetonu</button>` : ''}
-    </div>
-    <p class="tip">Hatırlatma: turda tek eylem yapılır; tur sonunda elde en fazla ${MAX_TOKENS} jeton kalabilir. Aynı renkten 2 jeton almak için yığında en az 4 jeton olmalı.</p>
-  </section>
-
-  <section class="panel">
-    <details>
-      <summary>Kurulum bilgisi</summary>
-      <div style="margin-top:8px">${refTable(state.players.length)}</div>
-    </details>
-  </section>
-
-  <section class="panel">
-    <details>
-      <summary>Oyun kaydı (${state.log.length})</summary>
-      <ol class="log" reversed>${state.log.map(l => `<li>${h(l)}</li>`).join('')}</ol>
-    </details>
-  </section>`;
+  ${body}`;
 }
 
 function viewOver() {
   const st = standings();
   const best = st[0];
   const winners = st.filter(x => x.s === best.s && x.c === best.c);
-  const medals = ['🥇', '🥈', '🥉', '4.'];
-  const tieNote = st.filter(x => x.s === best.s).length > 1
-    ? `<p class="tip">Puan eşitliği: en az kart satın alan oyuncu kazanır${winners.length > 1 ? ' — kart sayısı da eşit, galibiyet paylaşılıyor.' : '.'}</p>` : '';
+  const tied = st.filter(x => x.s === best.s).length > 1;
+  // podyum sırası: 2 - 1 - 3 - 4
+  const order = [st[1], st[0], st[2], st[3]].filter(Boolean);
+  const top = Math.max(1, best.s);
   return `
-  <h1><span>MARVEL</span> Splendor</h1>
-  <p class="sub">${state.turn.round} tur oynandı</p>
-  <section class="panel">
-    <h2>🏆 ${winners.map(w => h(w.p.name)).join(' & ')} kazandı!</h2>
-    ${st.map((x, k) => `
-      <div class="rank ${winners.includes(x) ? 'win' : ''}">
-        <div class="pos">${medals[k]}</div>
-        <div class="grow">
-          <b>${h(x.p.name)}</b>
-          <div class="muted" style="font-size:12px">${x.c} kart (${[1, 2, 3].map(l => x.p.cards.filter(c => c.lvl === l).length).join('/')}) · ${state.nobles.filter(n => n.owner === x.i).length} soylu · ${noblePoints(x.i)} soylu puanı</div>
-        </div>
-        <b style="font-size:24px">${x.s}</b>
-      </div>`).join('')}
-    ${tieNote}
-  </section>
-  <div class="players">${state.players.map(playerCard).join('')}</div>
-  <div style="height:12px"></div>
+  <header class="brand" style="padding-top:12px"><div class="tag">Oyun bitti · ${state.turn.round} tur</div></header>
+  <div class="winner-title"><span>${winners.map(w => esc(w.p.name)).join(' & ')}</span> kazandı</div>
+  ${tied ? `<p class="tip" style="text-align:center">Puanlar eşit: en az kart satın alan kazanır${winners.length > 1 ? '; kart sayısı da eşit olduğu için galibiyet paylaşıldı' : ''}.</p>` : ''}
+  <div class="podium">${order.map(x => {
+    const rank = st.indexOf(x);
+    const h = 60 + 120 * Math.max(0, x.s) / top * (rank === 0 ? 1 : .9);
+    return `<div class="col" style="--pc:${x.p.color}">
+      ${avatar(x.p)}
+      <div class="nm">${esc(x.p.name)}</div>
+      <div class="blk" style="height:${h}px;animation-delay:${rank * .15}s"><b>${x.s}</b><span>${rank + 1}. · ${x.c} kart</span></div>
+    </div>`;
+  }).join('')}</div>
+  ${statsView()}
   <div class="row">
-    <button class="ghost" data-act="undo" ${history.length ? '' : 'disabled'}>↶ Geri al</button>
+    <button class="btn-ghost" data-act="undo" ${history.length ? '' : 'disabled'}>Geri al</button>
     <button class="grow" data-act="newGame">Yeni oyun</button>
-    <button class="primary grow" data-act="rematch">Rövanş (aynı oyuncular)</button>
+    <button class="btn-gold grow" data-act="rematch">Rövanş</button>
   </div>`;
 }
 
@@ -588,69 +970,104 @@ function viewModal() {
   const m = modal;
   let body = '';
   if (m.type === 'buy') {
-    const opts = LEVEL_POINTS[m.lvl];
+    const p = state.players[state.turn.cur];
+    const cc = m.gem === null ? '#8a8296' : GEM_GLOW[m.gem];
     body = `
-      <h3>🃏 ${h(state.players[state.turn.cur].name)} kart aldı</h3>
-      <div class="lbl">Seviye</div>
-      <div class="seg">${[1, 2, 3].map(l => `<button class="${m.lvl === l ? 'sel' : ''}" data-act="bLvl" data-v="${l}">${'●'.repeat(l)} ${l}</button>`).join('')}</div>
-      <div class="lbl">Kartın verdiği bonus taşı</div>
-      <div class="gempick">${[0, 1, 2, 3, 4].map(g => `<button class="${m.gem === g ? 'sel' : ''}" style="border-top-color:${gemColor(g)}" data-act="bGem" data-v="${g}">${h(gemName(g))}</button>`).join('')}</div>
-      <div class="lbl">Puan (kartın sol üstü)</div>
-      <div class="ptpick">${[0, 1, 2, 3, 4, 5].map(v => `<button class="${m.pts === v ? 'sel' : ''} ${opts.includes(v) ? '' : 'muted'}" data-act="bPts" data-v="${v}">${v}</button>`).join('')}</div>
-      <div class="lbl"></div>
-      <label class="chk"><input type="checkbox" data-act="bRes" ${m.fromReserve ? 'checked' : ''} ${state.players[state.turn.cur].reserved ? '' : 'disabled'}> Ayrılmış kartlarımdan aldım</label>
-      <div class="row" style="margin-top:14px">
-        <button class="ghost" data-act="close">Vazgeç</button>
-        <button class="primary grow" data-act="confirmBuy" ${m.gem === null ? 'disabled' : ''}>Onayla ve sırayı geçir</button>
+      <h3>Kart satın aldı</h3>
+      <div class="muted" style="font-size:13px">${esc(p.name)} · kartın üzerindekileri seç</div>
+      <div class="buywrap" style="margin-top:16px">
+        <div class="devcard" style="--cc:${cc}">
+          <div class="band"><b class="${m.pts ? '' : 'empty'}">${m.pts}</b>${m.gem === null ? '' : gem(m.gem, 'lg')}</div>
+          <div class="lvl">${'<i></i>'.repeat(m.lvl)}</div>
+          <div class="sheen"></div>
+        </div>
+        <div>
+          <div class="lbl" style="margin-top:0">Seviye</div>
+          <div class="seg">${[1, 2, 3].map(l => `<button class="${m.lvl === l ? 'sel' : ''}" data-act="bLvl" data-v="${l}">${LEVEL_ROMAN[l]}</button>`).join('')}</div>
+          <div class="lbl">Puan</div>
+          <div class="ptpick" style="grid-template-columns:repeat(3,1fr)">${[0, 1, 2, 3, 4, 5].map(v => `<button class="${m.pts === v ? 'sel' : ''} ${LEVEL_POINTS[m.lvl].includes(v) ? '' : 'dim'}" data-act="bPts" data-v="${v}">${v}</button>`).join('')}</div>
+        </div>
+      </div>
+      <div class="lbl">Bonus taşı</div>
+      <div class="gempick">${[0, 1, 2, 3, 4].map(g => `<button class="${m.gem === g ? 'sel' : ''}" data-act="bGem" data-v="${g}">${gem(g, 'lg')}${GEMS[g]}</button>`).join('')}</div>
+      <div class="toggle ${m.fromReserve ? 'on' : ''} ${p.reserved ? '' : 'off'}" data-act="bRes"><span class="sw"></span><span>Ayrılmış kartlarımdan aldım <span class="muted">(${p.reserved})</span></span></div>
+      <div class="row" style="margin-top:18px">
+        <button class="btn-ghost" data-act="close">Vazgeç</button>
+        <button class="btn-gold grow" style="padding:15px" data-act="confirmBuy" ${m.gem === null ? 'disabled' : ''}>${m.gem === null ? 'Bonus taşını seç' : 'Onayla · sırayı geçir'}</button>
       </div>`;
   } else if (m.type === 'chooseNoble' || m.type === 'manualNoble') {
     const ids = m.type === 'chooseNoble' ? m.ids : state.nobles.filter(n => n.owner === null).map(n => n.id);
     body = `
-      <h3>👑 ${h(state.players[m.pi].name)} — hangi soylu?</h3>
-      <p class="tip">${m.type === 'chooseNoble' ? 'Birden fazla soylunun şartı sağlandı. Kurala göre turda yalnızca biri gelir — birini seç.' : 'Gereksinimi sağlanan soyluyu seç.'}</p>
+      <h3>${m.type === 'chooseNoble' ? 'Hangi soylu gelsin?' : 'Soylu ver'}</h3>
+      <div class="muted" style="font-size:13px">${esc(state.players[m.pi].name)} · ${m.type === 'chooseNoble' ? 'birden fazla şart sağlandı; turda yalnızca bir soylu gelir' : 'gelen soyluyu seç'}</div>
       ${ids.map(id => {
         const nb = state.nobles[id];
-        return `<button style="width:100%;margin-top:8px;text-align:left" data-act="pickNoble" data-v="${id}">
-          Soylu ${id + 1} · ${nb.pts} puan
-          <span class="reqs" style="margin-top:6px">${nb.req.map((v, g) => v ? `<span class="req" style="background:${gemColor(g)}">${v}</span>` : '').join('')}</span>
+        return `<button class="choice" data-act="pickNoble" data-v="${id}">
+          <svg class="gem lg" style="color:var(--gold)"><use href="#crown"/></svg>
+          <b>Soylu ${id + 1}</b><span class="grow"></span>
+          ${hasReq(nb) ? nb.req.map((v, g) => v ? `<span class="row" style="gap:2px">${gem(g)}<b>${v}</b></span>` : '').join('') : '<span class="muted">—</span>'}
         </button>`;
       }).join('')}
-      ${m.type === 'manualNoble' ? '<button class="ghost" style="width:100%;margin-top:12px" data-act="close">Vazgeç</button>' : ''}`;
-  } else if (m.type === 'avengers') {
-    body = `
-      <h3>🛡️ Avengers jetonu kimde?</h3>
-      ${state.players.map((p, i) => `<button style="width:100%;margin-top:8px" class="${state.avengersOwner === i ? 'sel' : ''}" data-act="setAv" data-v="${i}">${h(p.name)}</button>`).join('')}
-      <button style="width:100%;margin-top:8px" class="${state.avengersOwner === null ? 'sel' : ''}" data-act="setAv" data-v="-1">Kimsede değil</button>
-      <button class="ghost" style="width:100%;margin-top:12px" data-act="close">Kapat</button>`;
+      ${m.type === 'manualNoble' ? '<button class="btn-ghost" style="width:100%;margin-top:14px" data-act="close">Vazgeç</button>' : ''}`;
   } else if (m.type === 'edit') {
     const p = state.players[m.pi];
     body = `
-      <h3>✏️ ${h(p.name)}</h3>
-      <div class="row">
-        <span class="grow">Puan düzeltmesi</span>
-        <span class="stepper"><button data-act="adj" data-d="-1">−</button><output>${p.adj > 0 ? '+' : ''}${p.adj}</output><button data-act="adj" data-d="1">+</button></span>
-      </div>
-      <div class="row" style="margin-top:8px">
-        <span class="grow">Ayrılmış kart</span>
-        <span class="stepper"><button data-act="resv" data-d="-1">−</button><output>${p.reserved}</output><button data-act="resv" data-d="1">+</button></span>
-      </div>
+      <div class="row">${avatar(p)}<h3 class="grow">${esc(p.name)}</h3></div>
+      <div class="row" style="margin-top:16px"><span class="grow">Puan düzeltmesi</span>
+        <span class="stepper"><button data-act="adj" data-d="-1">−</button><output>${p.adj > 0 ? '+' : ''}${p.adj}</output><button data-act="adj" data-d="1">+</button></span></div>
+      <div class="row" style="margin-top:10px"><span class="grow">Ayrılmış kart</span>
+        <span class="stepper"><button data-act="resv" data-d="-1">−</button><output>${p.reserved}</output><button data-act="resv" data-d="1">+</button></span></div>
       <div class="lbl">Soylular</div>
-      ${state.nobles.map(nb => `<label class="chk" style="margin:6px 0"><input type="checkbox" data-act="toggleNoble" data-v="${nb.id}" ${nb.owner === m.pi ? 'checked' : ''} ${nb.owner !== null && nb.owner !== m.pi ? 'disabled' : ''}> Soylu ${nb.id + 1}${nb.owner !== null && nb.owner !== m.pi ? ` <span class="muted">(${h(state.players[nb.owner].name)})</span>` : ''}</label>`).join('')}
-      <div class="lbl">Satın alınan kartlar (${p.cards.length})</div>
-      <ul class="cardlist">
-        ${p.cards.map((c, k) => `<li>${dot(c.gem)}<span class="grow">${c.lvl}. seviye · ${h(gemName(c.gem))}</span><b>${c.pts}★</b><button class="small ghost" data-act="delCard" data-v="${k}">Sil</button></li>`).join('') || '<li class="muted">Henüz kart yok</li>'}
-      </ul>
-      <button class="primary" style="width:100%;margin-top:14px" data-act="close">Tamam</button>`;
+      ${state.nobles.map(nb => {
+        const other = nb.owner !== null && nb.owner !== m.pi;
+        return `<div class="toggle ${nb.owner === m.pi ? 'on' : ''} ${other ? 'off' : ''}" style="margin-top:8px" data-act="toggleNoble" data-v="${nb.id}"><span class="sw"></span><span>Soylu ${nb.id + 1}${other ? ` <span class="muted">· ${esc(state.players[nb.owner].name)}</span>` : ''}</span></div>`;
+      }).join('')}
+      <div class="lbl">Satın alınan kartlar · ${p.cards.length}</div>
+      <ul class="list">${p.cards.map((c, k) => `<li>${gem(c.gem)}<span class="grow">${LEVEL_ROMAN[c.lvl]}. seviye · ${GEMS[c.gem]}</span><b>${c.pts}</b><button class="btn-ghost" style="font-size:12px;padding:6px 10px" data-act="delCard" data-v="${k}">Sil</button></li>`).join('') || '<li class="muted">Henüz kart yok</li>'}</ul>
+      <button class="btn-gold" style="width:100%;margin-top:18px;padding:14px" data-act="close">Tamam</button>`;
   } else if (m.type === 'menu') {
     body = `
       <h3>Menü</h3>
-      <button style="width:100%;margin-top:8px" data-act="skip">⏭ Sırayı elle geçir</button>
-      <button style="width:100%;margin-top:8px" data-act="endNow">🏁 Oyunu şimdi bitir</button>
-      <button style="width:100%;margin-top:8px" data-act="rematch">🔁 Rövanş (aynı oyuncular)</button>
-      <button style="width:100%;margin-top:8px" data-act="newGame">🆕 Yeni oyun</button>
-      <button class="ghost" style="width:100%;margin-top:12px" data-act="close">Kapat</button>`;
+      <button class="choice" data-act="skip">Sırayı elle geçir</button>
+      <button class="choice" data-act="endNow">Oyunu şimdi bitir</button>
+      <button class="choice" data-act="rematch">Rövanş (aynı oyuncular)</button>
+      <button class="choice" data-act="newGame">Yeni oyun</button>
+      <button class="btn-ghost" style="width:100%;margin-top:14px" data-act="close">Kapat</button>`;
   }
-  return `<div class="backdrop" data-act="backdrop"><div class="sheet">${body}</div></div>`;
+  return `<div class="backdrop" data-act="backdrop"><div class="sheet"><div class="grab"></div>${body}</div></div>`;
+}
+
+/* ===================== Çizim ve animasyon ===================== */
+
+function render() {
+  save();
+  const app = document.getElementById('app');
+  const views = { setup: viewSetup, nobles: viewNobles, game: viewGame, over: viewOver };
+  app.innerHTML = views[state.phase]() + (modal ? viewModal() : '');
+  // ekran ya da sekme değişince başa dön
+  const view = state.phase + tab;
+  if (view !== lastView) { window.scrollTo(0, 0); lastView = view; }
+  animateValues();
+}
+
+// Halkalar, pist ve sayılar önceki değerden yenisine akar
+function animateValues() {
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    document.querySelectorAll('circle.prog[data-to]').forEach(c => { c.style.strokeDashoffset = c.dataset.to; });
+    document.querySelectorAll('.pin[data-left]').forEach(p => { p.style.left = p.dataset.left + '%'; });
+    document.querySelectorAll('[data-count]').forEach(el => {
+      const from = +el.dataset.from, to = +el.dataset.count;
+      if (from === to) { el.textContent = to; return; }
+      const t0 = performance.now();
+      const step = now => {
+        const k = Math.min(1, (now - t0) / 900);
+        el.textContent = Math.round(from + (to - from) * (1 - Math.pow(1 - k, 3)));
+        if (k < 1) requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    });
+  }));
+  if (state.players.length) state.players.forEach((_, i) => { shownScore[i] = score(i); });
 }
 
 function toast(text) {
@@ -660,15 +1077,111 @@ function toast(text) {
   t.textContent = text;
   document.body.appendChild(t);
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.remove(), 3200);
+  toastTimer = setTimeout(() => t.remove(), 3400);
 }
+
+function turnFlash() {
+  if (state.phase !== 'game') return;
+  const p = state.players[state.turn.cur];
+  document.querySelectorAll('.turnflash').forEach(e => e.remove());
+  const el = document.createElement('div');
+  el.className = 'turnflash';
+  el.innerHTML = `<div style="--pc:${p.color}"><small>SIRA</small>${esc(p.name)}</div>`;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1200);
+}
+
+function celebrateNoble(pi) {
+  const p = state.players[pi];
+  buzz([20, 40, 20]);
+  const el = document.createElement('div');
+  el.className = 'celebrate';
+  el.innerHTML = `<div class="box"><svg><use href="#crown"/></svg><h3>${esc(p.name)}</h3><p>Soylu ziyareti · +${NOBLE_POINTS}</p></div>`;
+  document.body.appendChild(el);
+  confetti(['#f2c35b', '#ffe7a3', p.color]);
+  const close = () => el.remove();
+  el.addEventListener('click', close);
+  setTimeout(close, 1900);
+}
+
+/* ---------- Tuval efektleri ---------- */
+
+const reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+const amb = document.getElementById('ambient'), actx = amb.getContext('2d');
+const fx = document.getElementById('fx'), fctx = fx.getContext('2d');
+let dpr = 1, VW = 0, VH = 0;
+function resize() {
+  dpr = Math.min(2, window.devicePixelRatio || 1);
+  VW = innerWidth; VH = innerHeight;
+  [amb, fx].forEach(c => { c.width = VW * dpr; c.height = VH * dpr; });
+  actx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  fctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+resize();
+addEventListener('resize', resize);
+
+// Arka planda süzülen taş parıltıları
+const motes = Array.from({ length: 34 }, () => ({
+  x: Math.random(), y: Math.random(), r: 1 + Math.random() * 2.4,
+  vy: .00004 + Math.random() * .00012, vx: (Math.random() - .5) * .00005,
+  c: GEM_GLOW[Math.floor(Math.random() * 5)], ph: Math.random() * 6.28,
+}));
+let sparks = [];
+
+function confetti(colors) {
+  if (reduceMotion) return;
+  for (let k = 0; k < 140; k++) {
+    const a = Math.random() * Math.PI * 2, v = 4 + Math.random() * 9;
+    sparks.push({
+      x: VW / 2, y: VH * .42, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 5,
+      s: 4 + Math.random() * 6, rot: Math.random() * 6, vr: (Math.random() - .5) * .4,
+      c: colors[k % colors.length], life: 1, hex: Math.random() < .5,
+    });
+  }
+}
+
+function frame(t) {
+  actx.clearRect(0, 0, VW, VH);
+  if (!reduceMotion) {
+    motes.forEach(m => {
+      m.y -= m.vy * 16; m.x += m.vx * 16;
+      if (m.y < -.02) { m.y = 1.02; m.x = Math.random(); }
+      const a = .25 + .35 * Math.sin(t / 900 + m.ph);
+      actx.globalAlpha = Math.max(0, a);
+      actx.fillStyle = m.c;
+      actx.shadowColor = m.c; actx.shadowBlur = 12;
+      actx.beginPath(); actx.arc(m.x * VW, m.y * VH, m.r, 0, 6.283); actx.fill();
+    });
+    actx.globalAlpha = 1; actx.shadowBlur = 0;
+  }
+  fctx.clearRect(0, 0, VW, VH);
+  if (sparks.length) {
+    sparks.forEach(s => {
+      s.vy += .28; s.vx *= .985; s.x += s.vx; s.y += s.vy; s.rot += s.vr; s.life -= .009;
+      fctx.save();
+      fctx.globalAlpha = Math.max(0, s.life);
+      fctx.translate(s.x, s.y); fctx.rotate(s.rot);
+      fctx.fillStyle = s.c;
+      if (s.hex) {
+        fctx.beginPath();
+        for (let k = 0; k < 6; k++) fctx.lineTo(Math.cos(k * 1.047) * s.s * .6, Math.sin(k * 1.047) * s.s * .6);
+        fctx.fill();
+      } else fctx.fillRect(-s.s / 2, -s.s / 4, s.s, s.s / 2);
+      fctx.restore();
+    });
+    sparks = sparks.filter(s => s.life > 0 && s.y < VH + 40);
+  }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
 
 /* ===================== Olaylar ===================== */
 
-// Android geri tuşu: açık pencere varsa kapatır (true döner), yoksa uygulama kapanır
+// Android geri tuşu: açık pencereyi kapatır (true), yoksa uygulama kapanır (false)
 window.appBack = () => {
-  if (modal && modal.type !== 'chooseNoble') { modal = null; render(); return true; }
-  if (modal) return true;
+  if (modal && modal.type === 'chooseNoble') return true;
+  if (modal) { modal = null; render(); return true; }
+  if (state.phase === 'game' && tab !== 'table') { tab = 'table'; render(); return true; }
   if (state.phase === 'nobles') { state.phase = 'setup'; render(); return true; }
   return false;
 };
@@ -678,104 +1191,104 @@ document.addEventListener('click', e => {
   if (!el) return;
   const a = el.dataset.act;
   const v = el.dataset.v !== undefined ? Number(el.dataset.v) : null;
-  if (a === 'backdrop') { if (e.target === el && modal && modal.type !== 'chooseNoble') { modal = null; render(); } return; }
-  if (el.type === 'checkbox') return; // change olayında işlenir
-
+  if (a === 'backdrop') {
+    if (e.target === el && modal && modal.type !== 'chooseNoble') { modal = null; render(); }
+    return;
+  }
   switch (a) {
     // Kurulum
-    case 'count': state.settings.count = v; if (state.turn.first >= v) state.turn.first = 0; break;
-    case 'first': state.turn.first = v; break;
-    case 'randfirst': state.turn.first = Math.floor(Math.random() * state.settings.count); toast(`İlk oyuncu: ${(state.names[state.turn.first] || '').trim() || `Oyuncu ${state.turn.first + 1}`}`); break;
-    case 'toNobles': startNobleSetup(); return;
+    case 'count': state.count = v; if (state.first >= v) state.first = 0; buzz(8); break;
+    case 'first': state.first = v; break;
+    case 'randfirst': state.first = Math.floor(Math.random() * state.count); toast(`${playerName(state.first)} başlıyor`); break;
+    case 'target': state.target = Math.max(5, Math.min(30, state.target + Number(el.dataset.d))); break;
+    case 'toNobles': toNobles(); return;
     case 'backSetup': state.phase = 'setup'; break;
     case 'req': {
-      const n = state.nobles[Number(el.dataset.n)];
-      const g = Number(el.dataset.g);
+      const n = state.nobles[Number(el.dataset.n)], g = Number(el.dataset.g);
       n.req[g] = Math.max(0, Math.min(7, n.req[g] + Number(el.dataset.d)));
+      buzz(6);
       break;
     }
     case 'reqclear': state.nobles[Number(el.dataset.n)].req = [0, 0, 0, 0, 0]; break;
     case 'start': startGame(); return;
 
-    // Oyun eylemleri
+    // Oyun
+    case 'tab': tab = el.dataset.t; break;
     case 'tokens': act('tokens'); return;
     case 'reserve': act('reserve'); return;
     case 'openBuy': modal = { type: 'buy', lvl: 1, gem: null, pts: 0, fromReserve: false }; break;
     case 'bLvl': modal.lvl = v; modal.pts = LEVEL_POINTS[v][0]; break;
-    case 'bGem': modal.gem = v; break;
+    case 'bGem': modal.gem = v; buzz(6); break;
     case 'bPts': modal.pts = v; break;
+    case 'bRes': modal.fromReserve = !modal.fromReserve; break;
     case 'confirmBuy': act('buy', modal); return;
     case 'pickNoble': {
-      const pi = modal.pi;
-      const chosen = modal.type === 'chooseNoble';
+      const chosen = modal.type === 'chooseNoble', pi = modal.pi;
       if (!chosen) snapshot();
-      giveNoble(pi, v);
       modal = null;
-      if (chosen) { finishTurn(); return; }
+      giveNoble(pi, v);
+      if (chosen) { finishTurn(true); return; }
       break;
     }
     case 'manualNoble': modal = { type: 'manualNoble', pi: state.turn.cur }; break;
-    case 'avengers': modal = { type: 'avengers' }; break;
-    case 'setAv': snapshot(); state.avengersOwner = v < 0 ? null : v; addLog(`🛡️ Avengers jetonu: ${v < 0 ? 'kimsede değil' : state.players[v].name}`); break;
     case 'edit': modal = { type: 'edit', pi: v }; break;
     case 'adj': snapshot(); state.players[modal.pi].adj += Number(el.dataset.d); break;
-    case 'resv': { snapshot(); const p = state.players[modal.pi]; p.reserved = Math.max(0, Math.min(MAX_RESERVED, p.reserved + Number(el.dataset.d))); break; }
+    case 'resv': {
+      snapshot();
+      const p = state.players[modal.pi];
+      p.reserved = Math.max(0, Math.min(MAX_RESERVED, p.reserved + Number(el.dataset.d)));
+      break;
+    }
+    case 'toggleNoble': {
+      const nb = state.nobles[v];
+      if (nb.owner !== null && nb.owner !== modal.pi) return;
+      snapshot();
+      nb.owner = nb.owner === modal.pi ? null : modal.pi;
+      addLog(`Soylu ${v + 1} ${nb.owner === null ? 'geri alındı' : 'elle verildi'}`, modal.pi);
+      break;
+    }
     case 'delCard': snapshot(); state.players[modal.pi].cards.splice(v, 1); break;
     case 'menu': modal = { type: 'menu' }; break;
-    case 'skip': snapshot(); modal = null; addLog(`${state.players[state.turn.cur].name} sırası elle geçildi`); finishTurn(); return;
-    case 'endNow': if (confirm('Oyun şimdi bitirilsin mi?')) { snapshot(); modal = null; endGame(); } return;
+    case 'skip': snapshot(); modal = null; addLog('Sırası elle geçildi', state.turn.cur); finishTurn(); return;
+    case 'endNow':
+      if (!confirm('Oyun şimdi bitirilsin mi?')) return;
+      snapshot(); modal = null; endGame(); return;
     case 'undo': undo(); return;
     case 'close': modal = null; break;
     case 'rematch':
       if (state.phase !== 'over' && !confirm('Mevcut oyun silinip aynı oyuncularla yeniden başlansın mı?')) return;
       snapshot();
       state.players.forEach(p => { p.cards = []; p.reserved = 0; p.adj = 0; });
-      state.nobles.forEach(n => { n.owner = null; });
+      // yeni oyunda masaya başka soylular gelir
+      state.nobles.forEach(n => { n.owner = null; n.req = [0, 0, 0, 0, 0]; });
       modal = null;
-      // soylular masada değişir: gereksinim ekranına dön
+      shownScore = {};
       state.phase = 'nobles';
-      state.nobles.forEach(n => { n.req = [0, 0, 0, 0, 0]; });
       break;
     case 'newGame':
       if (state.phase !== 'over' && !confirm('Mevcut oyun silinsin mi?')) return;
       state = freshState(state);
       history = [];
       modal = null;
+      shownScore = {};
       break;
     default: return;
   }
   render();
 });
 
-document.addEventListener('change', e => {
-  const el = e.target;
-  if (el.dataset.act === 'bRes') { modal.fromReserve = el.checked; return; }
-  if (el.dataset.act === 'toggleNoble') {
-    snapshot();
-    const nb = state.nobles[Number(el.dataset.v)];
-    nb.owner = el.checked ? modal.pi : null;
-    addLog(`👑 Soylu ${nb.id + 1} ${el.checked ? state.players[modal.pi].name + ' oyuncusuna verildi' : 'geri alındı'} (elle)`);
-    render();
-    return;
-  }
-  if (el.dataset.set === 'avengers') { state.settings.avengers = el.checked; save(); return; }
-  if (el.dataset.set === 'target') {
-    const t = parseInt(el.value, 10);
-    state.settings.target = Number.isFinite(t) ? Math.max(5, Math.min(40, t)) : DEFAULT_TARGET;
-    render();
-  }
-});
-
 document.addEventListener('input', e => {
   const el = e.target;
-  if (el.dataset.name !== undefined) state.names[Number(el.dataset.name)] = el.value;
-  else if (el.dataset.gem !== undefined) state.settings.gems[Number(el.dataset.gem)] = el.value;
-  else if (el.dataset.set === 'joker') state.settings.joker = el.value;
-  else return;
+  if (el.dataset.name === undefined) return;
+  const i = Number(el.dataset.name);
+  state.names[i] = el.value;
+  const av = el.parentElement.querySelector('.avatar');
+  if (av) av.textContent = initial(playerName(i));
   save();
 });
 
 render();
+if (state.phase === 'game') turnFlash();
 </script>
 </body>
 </html>
