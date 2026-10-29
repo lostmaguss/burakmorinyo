@@ -1,0 +1,770 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#120d16">
+<title>Marvel Splendor Puan Sayacı</title>
+<style>
+  :root {
+    --bg: #120d16;
+    --panel: #1d1622;
+    --panel-2: #271e2e;
+    --line: #3a2d44;
+    --text: #f3ecf6;
+    --muted: #a898b2;
+    --accent: #e23636;
+    --accent-2: #f5c518;
+    --ok: #3ccf7a;
+    --radius: 14px;
+    --g0: #3b82f6; /* Uzay */
+    --g1: #facc15; /* Zihin */
+    --g2: #ef4444; /* Gerçeklik */
+    --g3: #a855f7; /* Güç */
+    --g4: #f97316; /* Ruh */
+    --gj: #22c55e; /* Joker (Zaman) */
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: radial-gradient(1200px 600px at 50% -200px, #3a1020 0%, var(--bg) 60%) fixed, var(--bg);
+    color: var(--text);
+    font: 15px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    min-height: 100vh;
+    padding: 12px 16px calc(24px + env(safe-area-inset-bottom));
+  }
+  main { max-width: 860px; margin: 0 auto; }
+  h1 { font-size: 22px; margin: 4px 0 2px; letter-spacing: .5px; }
+  h1 span { color: var(--accent); }
+  h2 { font-size: 17px; margin: 0 0 10px; }
+  .sub { color: var(--muted); font-size: 13px; margin: 0 0 14px; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; margin-bottom: 12px; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .grow { flex: 1; }
+  button {
+    font: inherit; color: var(--text); background: var(--panel-2); border: 1px solid var(--line);
+    border-radius: 10px; padding: 10px 14px; cursor: pointer; touch-action: manipulation;
+  }
+  button:hover { border-color: #5a4668; }
+  button:disabled { opacity: .4; cursor: not-allowed; }
+  button.primary { background: var(--accent); border-color: var(--accent); font-weight: 600; }
+  button.gold { background: var(--accent-2); border-color: var(--accent-2); color: #1a1300; font-weight: 600; }
+  button.ghost { background: transparent; }
+  button.small { padding: 6px 10px; font-size: 13px; }
+  button.sel { outline: 2px solid var(--accent-2); border-color: var(--accent-2); }
+  input[type=text], input[type=number] {
+    font: inherit; color: var(--text); background: var(--panel-2); border: 1px solid var(--line);
+    border-radius: 10px; padding: 9px 11px; width: 100%;
+  }
+  label.chk { display: flex; gap: 8px; align-items: center; cursor: pointer; }
+  .seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px; }
+  .seg button { padding: 12px 6px; }
+  .big-choice { font-size: 20px; font-weight: 700; }
+  .big-choice small { display: block; font-size: 12px; font-weight: 400; color: var(--muted); }
+  table.ref { width: 100%; border-collapse: collapse; font-size: 14px; }
+  table.ref td { padding: 6px 4px; border-bottom: 1px solid var(--line); }
+  table.ref td:last-child { text-align: right; font-weight: 600; }
+  .gem { display: inline-block; width: 12px; height: 12px; border-radius: 50%; vertical-align: -1px; margin-right: 6px; box-shadow: 0 0 6px currentColor; }
+  .muted { color: var(--muted); }
+  .tip { font-size: 13px; color: var(--muted); margin: 8px 0 0; }
+
+  /* Oyun ekranı */
+  .status { position: sticky; top: 0; z-index: 5; background: rgba(18,13,22,.92); backdrop-filter: blur(6px); margin: 0 -16px 12px; padding: 10px 16px; border-bottom: 1px solid var(--line); }
+  .status .round { font-size: 13px; color: var(--muted); }
+  .status .who { font-size: 18px; font-weight: 700; }
+  .banner { background: var(--accent); color: #fff; border-radius: 10px; padding: 8px 12px; font-weight: 600; margin-top: 8px; font-size: 14px; }
+  .players { display: grid; gap: 10px; grid-template-columns: 1fr; }
+  @media (min-width: 640px) { .players { grid-template-columns: 1fr 1fr; } }
+  .pcard { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; position: relative; }
+  .pcard.active { border-color: var(--accent-2); box-shadow: 0 0 0 1px var(--accent-2), 0 0 24px rgba(245,197,24,.15); }
+  .pcard .top { display: flex; align-items: center; gap: 10px; }
+  .pcard .name { font-weight: 700; font-size: 16px; }
+  .pcard .first { font-size: 11px; color: #1a1300; background: var(--accent-2); padding: 1px 6px; border-radius: 6px; margin-left: 6px; font-weight: 700; }
+  .score { margin-left: auto; text-align: right; }
+  .score b { font-size: 34px; line-height: 1; }
+  .score .of { color: var(--muted); font-size: 13px; }
+  .bar { height: 6px; background: var(--panel-2); border-radius: 4px; overflow: hidden; margin: 8px 0; }
+  .bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); }
+  .bonuses { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin: 8px 0; }
+  .bonus { background: var(--panel-2); border-radius: 8px; text-align: center; padding: 4px 0; border-top: 3px solid; }
+  .bonus b { display: block; font-size: 17px; }
+  .bonus span { font-size: 10px; color: var(--muted); }
+  .facts { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: 13px; color: var(--muted); }
+  .facts b { color: var(--text); }
+  .warn { color: var(--accent-2); }
+  .nobleline { font-size: 13px; margin-top: 6px; }
+  .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+  .actions button { padding: 12px 6px; }
+  .actions .wide { grid-column: span 2; }
+
+  .nobles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+  .noble { background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 10px; font-size: 13px; }
+  .noble.taken { opacity: .55; }
+  .noble .nt { display: flex; justify-content: space-between; font-weight: 700; margin-bottom: 6px; }
+  .reqs { display: flex; gap: 4px; flex-wrap: wrap; }
+  .req { display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 26px; border-radius: 6px; font-weight: 700; color: #111; padding: 0 4px; }
+  .near { font-size: 12px; color: var(--muted); margin-top: 6px; }
+
+  .stepper { display: inline-flex; align-items: center; gap: 6px; }
+  .stepper button { width: 34px; height: 34px; padding: 0; font-size: 18px; }
+  .stepper output { min-width: 22px; text-align: center; font-weight: 700; }
+  .reqgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+  .reqgrid .cell { text-align: center; border-top: 3px solid; background: var(--panel); border-radius: 8px; padding: 4px 0; }
+  .reqgrid .cell button { width: 100%; padding: 2px 0; border: 0; background: transparent; font-size: 16px; }
+  .reqgrid .cell b { display: block; font-size: 16px; }
+
+  .log { max-height: 220px; overflow: auto; font-size: 13px; color: var(--muted); padding-left: 18px; margin: 0; }
+  .log li { margin: 2px 0; }
+
+  /* Modal */
+  .backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: flex; align-items: flex-end; justify-content: center; z-index: 20; }
+  @media (min-width: 640px) { .backdrop { align-items: center; } }
+  .sheet { background: var(--panel); border: 1px solid var(--line); border-radius: 18px 18px 0 0; width: 100%; max-width: 520px; max-height: 90vh; overflow: auto; padding: 16px 16px calc(16px + env(safe-area-inset-bottom)); }
+  @media (min-width: 640px) { .sheet { border-radius: 18px; } }
+  .sheet h3 { margin: 0 0 12px; }
+  .sheet .lbl { font-size: 13px; color: var(--muted); margin: 12px 0 6px; }
+  .gempick { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+  .gempick button { padding: 10px 2px; font-size: 12px; border-top: 4px solid; }
+  .ptpick { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+  .cardlist { list-style: none; margin: 0; padding: 0; }
+  .cardlist li { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+  .toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom)); transform: translateX(-50%); background: var(--accent-2); color: #1a1300; font-weight: 700; padding: 10px 16px; border-radius: 12px; z-index: 30; box-shadow: 0 6px 24px rgba(0,0,0,.4); max-width: calc(100% - 32px); text-align: center; }
+
+  .rank { display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 12px; background: var(--panel-2); margin-bottom: 8px; }
+  .rank .pos { font-size: 22px; width: 34px; text-align: center; }
+  .rank.win { background: linear-gradient(90deg, rgba(245,197,24,.25), var(--panel-2)); border: 1px solid var(--accent-2); }
+  details summary { cursor: pointer; font-weight: 600; }
+</style>
+</head>
+<body>
+<main id="app"></main>
+
+<script>
+/* ===================== Kurallar ve sabitler ===================== */
+
+// Splendor kurulum kuralları (oyuncu sayısına göre)
+const SETUP = {
+  2: { tokens: 4, nobles: 3 },
+  3: { tokens: 5, nobles: 4 },
+  4: { tokens: 7, nobles: 5 },
+};
+const JOKER_TOKENS = 5;     // Altın / joker jeton her zaman 5
+const NOBLE_POINTS = 3;     // Her soylu 3 puan
+const MAX_RESERVED = 3;     // En fazla 3 ayrılmış kart
+const MAX_TOKENS = 10;      // Tur sonunda en fazla 10 jeton
+const DEFAULT_TARGET = 15;
+const LEVEL_POINTS = { 1: [0, 1], 2: [1, 2, 3], 3: [3, 4, 5] }; // Seviyelere göre olası kart puanları
+
+const GEM_VARS = ['--g0', '--g1', '--g2', '--g3', '--g4'];
+const DEFAULT_GEMS = ['Uzay', 'Zihin', 'Gerçeklik', 'Güç', 'Ruh'];
+const DEFAULT_JOKER = 'Zaman';
+const HERO_NAMES = ['Iron Man', 'Captain America', 'Thor', 'Black Widow'];
+const STORE_KEY = 'marvel-splendor-sayac-v1';
+
+/* ===================== Durum ===================== */
+
+let state = load() || freshState();
+let history = [];       // geri al için anlık görüntüler
+let modal = null;       // açık pencere
+let toastTimer = null;
+
+function freshState(prev) {
+  return {
+    phase: 'setup',
+    settings: prev ? prev.settings : {
+      count: 2,
+      target: DEFAULT_TARGET,
+      gems: DEFAULT_GEMS.slice(),
+      joker: DEFAULT_JOKER,
+      avengers: false,
+    },
+    names: prev ? prev.names : HERO_NAMES.slice(),
+    players: [],
+    nobles: [],
+    avengersOwner: null,
+    turn: { cur: 0, round: 1, first: 0 },
+    finalRound: false,
+    log: [],
+  };
+}
+
+function load() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+}
+function save() {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) { /* depolama yoksa sorun değil */ }
+}
+
+function snapshot() {
+  history.push(JSON.stringify(state));
+  if (history.length > 200) history.shift();
+}
+function undo() {
+  if (!history.length) return;
+  state = JSON.parse(history.pop());
+  modal = null;
+  render();
+  toast('Son işlem geri alındı');
+}
+
+/* ===================== Hesaplamalar ===================== */
+
+const gemName = i => state.settings.gems[i] || DEFAULT_GEMS[i];
+const gemColor = i => `var(${GEM_VARS[i]})`;
+
+function bonuses(p) {
+  const b = [0, 0, 0, 0, 0];
+  p.cards.forEach(c => b[c.gem]++);
+  return b;
+}
+function cardPoints(p) { return p.cards.reduce((s, c) => s + c.pts, 0); }
+function noblePoints(pi) {
+  return state.nobles.filter(n => n.owner === pi).reduce((s, n) => s + n.pts, 0);
+}
+function avengersPoints(pi) { return state.settings.avengers && state.avengersOwner === pi ? 3 : 0; }
+function score(pi) {
+  const p = state.players[pi];
+  return cardPoints(p) + noblePoints(pi) + avengersPoints(pi) + p.adj;
+}
+function hasReq(n) { return n.req.some(v => v > 0); }
+function meetsNoble(pi, n) {
+  const b = bonuses(state.players[pi]);
+  return hasReq(n) && n.req.every((v, i) => b[i] >= v);
+}
+function missingFor(pi, n) {
+  const b = bonuses(state.players[pi]);
+  return n.req.reduce((s, v, i) => s + Math.max(0, v - b[i]), 0);
+}
+
+/* ===================== Oyun akışı ===================== */
+
+function startNobleSetup() {
+  const s = state.settings;
+  state.players = Array.from({ length: s.count }, (_, i) => ({
+    name: (state.names[i] || '').trim() || `Oyuncu ${i + 1}`,
+    cards: [], reserved: 0, adj: 0,
+  }));
+  state.nobles = Array.from({ length: SETUP[s.count].nobles }, (_, i) => ({
+    id: i, req: [0, 0, 0, 0, 0], pts: NOBLE_POINTS, owner: null,
+  }));
+  state.phase = 'nobles';
+  render();
+}
+
+function startGame() {
+  state.phase = 'game';
+  state.turn = { cur: state.turn.first, round: 1, first: state.turn.first };
+  state.finalRound = false;
+  state.log = [];
+  state.avengersOwner = null;
+  history = [];
+  addLog(`Oyun başladı — ${state.players.length} oyuncu, hedef ${state.settings.target} puan`);
+  render();
+}
+
+function addLog(text) {
+  state.log.unshift(`T${state.turn.round} · ${text}`);
+  if (state.log.length > 300) state.log.pop();
+}
+
+function act(kind, card) {
+  snapshot();
+  const pi = state.turn.cur;
+  const p = state.players[pi];
+  if (kind === 'tokens') {
+    addLog(`${p.name} jeton aldı`);
+  } else if (kind === 'reserve') {
+    p.reserved = Math.min(MAX_RESERVED, p.reserved + 1);
+    addLog(`${p.name} kart ayırdı (${p.reserved}/${MAX_RESERVED})`);
+  } else if (kind === 'buy') {
+    p.cards.push({ lvl: card.lvl, gem: card.gem, pts: card.pts });
+    if (card.fromReserve && p.reserved > 0) p.reserved--;
+    addLog(`${p.name} ${card.lvl}. seviye ${gemName(card.gem)} kartı aldı${card.pts ? ` (+${card.pts})` : ''}${card.fromReserve ? ' [ayrılmış]' : ''}`);
+  }
+  modal = null;
+  nobleCheck(pi);
+}
+
+// Tur sonu: soylu ziyareti kontrolü (turda en fazla bir soylu gelir)
+function nobleCheck(pi) {
+  const eligible = state.nobles.filter(n => n.owner === null && meetsNoble(pi, n));
+  if (eligible.length === 1) {
+    giveNoble(pi, eligible[0].id);
+    finishTurn();
+  } else if (eligible.length > 1) {
+    modal = { type: 'chooseNoble', pi, ids: eligible.map(n => n.id) };
+    render();
+  } else {
+    finishTurn();
+  }
+}
+
+function giveNoble(pi, id) {
+  const n = state.nobles.find(x => x.id === id);
+  n.owner = pi;
+  addLog(`👑 Soylu ${id + 1}, ${state.players[pi].name} oyuncusunu ziyaret etti (+${n.pts})`);
+  toast(`👑 ${state.players[pi].name}: Soylu ${id + 1} geldi! +${n.pts}`);
+}
+
+function finishTurn() {
+  const n = state.players.length;
+  const pi = state.turn.cur;
+  if (!state.finalRound && score(pi) >= state.settings.target) {
+    state.finalRound = true;
+    addLog(`🔥 ${state.players[pi].name} ${score(pi)} puana ulaştı — son tur!`);
+    toast(`🔥 ${state.players[pi].name} ${state.settings.target}+ puan! Tur tamamlanınca oyun biter.`);
+  }
+  state.turn.cur = (pi + 1) % n;
+  if (state.turn.cur === state.turn.first) {
+    if (state.finalRound) { endGame(); return; }
+    state.turn.round++;
+  }
+  render();
+}
+
+function endGame() {
+  state.phase = 'over';
+  addLog('Oyun bitti');
+  render();
+}
+
+// Sıralama: en yüksek puan; eşitlikte en az kart satın alan kazanır
+function standings() {
+  return state.players.map((p, i) => ({ i, p, s: score(i), c: p.cards.length }))
+    .sort((a, b) => b.s - a.s || a.c - b.c);
+}
+
+/* ===================== Görünümler ===================== */
+
+const h = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const dot = i => `<span class="gem" style="color:${gemColor(i)};background:${gemColor(i)}"></span>`;
+
+function render() {
+  save();
+  const app = document.getElementById('app');
+  if (state.phase === 'setup') app.innerHTML = viewSetup();
+  else if (state.phase === 'nobles') app.innerHTML = viewNobleSetup();
+  else if (state.phase === 'game') app.innerHTML = viewGame();
+  else app.innerHTML = viewOver();
+  app.insertAdjacentHTML('beforeend', modal ? viewModal() : '');
+}
+
+function refTable(count) {
+  const r = SETUP[count];
+  return `<table class="ref">
+    <tr><td>Her renk taş jetonu (${state.settings.gems.map(h).join(', ')})</td><td>${r.tokens} adet</td></tr>
+    <tr><td><span class="gem" style="color:var(--gj);background:var(--gj)"></span>${h(state.settings.joker)} (joker)</td><td>${JOKER_TOKENS} adet</td></tr>
+    <tr><td>Açılacak soylu kartı</td><td>${r.nobles} adet</td></tr>
+    <tr><td>Her seviyeden açık kart</td><td>4 adet</td></tr>
+    <tr><td>Bitiş eşiği</td><td>${state.settings.target} puan</td></tr>
+  </table>`;
+}
+
+function viewSetup() {
+  const s = state.settings;
+  return `
+  <h1><span>MARVEL</span> Splendor</h1>
+  <p class="sub">Puan sayacı · tur takibi · soylu kontrolü</p>
+
+  <section class="panel">
+    <h2>Kaç kişi oynuyor?</h2>
+    <div class="seg">
+      ${[2, 3, 4].map(n => `<button class="big-choice ${s.count === n ? 'sel' : ''}" data-act="count" data-v="${n}">${n}<small>${SETUP[n].nobles} soylu · ${SETUP[n].tokens} jeton</small></button>`).join('')}
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Oyuncular</h2>
+    ${Array.from({ length: s.count }, (_, i) => `
+      <div class="row" style="margin-bottom:8px">
+        <input type="text" maxlength="20" value="${h(state.names[i] || '')}" placeholder="Oyuncu ${i + 1}" data-name="${i}" class="grow" style="width:auto">
+        <button class="small ${state.turn.first === i ? 'gold' : ''}" data-act="first" data-v="${i}" title="İlk oyuncu">${state.turn.first === i ? '★ İlk' : 'İlk'}</button>
+      </div>`).join('')}
+    <div class="row"><button class="small ghost" data-act="randfirst">🎲 İlk oyuncuyu rastgele seç</button></div>
+    <p class="tip">Kurala göre en genç oyuncu başlar. Son tur, ilk oyuncunun solundaki (sağ sıradaki son) oyuncuyla biter.</p>
+  </section>
+
+  <section class="panel">
+    <h2>Kurulum</h2>
+    ${refTable(s.count)}
+  </section>
+
+  <section class="panel">
+    <details>
+      <summary>Ayarlar (hedef puan, taş adları, Avengers jetonu)</summary>
+      <div class="lbl tip">Hedef puan (bitişi tetikler)</div>
+      <input type="number" min="5" max="40" value="${s.target}" data-set="target">
+      <div class="lbl tip">Taş adları (kendi versiyonuna göre değiştir)</div>
+      <div class="row">
+        ${s.gems.map((g, i) => `<div class="row" style="flex:1 1 140px">${dot(i)}<input type="text" class="grow" style="width:auto" maxlength="14" value="${h(g)}" data-gem="${i}"></div>`).join('')}
+        <div class="row" style="flex:1 1 140px"><span class="gem" style="color:var(--gj);background:var(--gj)"></span><input type="text" class="grow" style="width:auto" maxlength="14" value="${h(s.joker)}" data-set="joker"></div>
+      </div>
+      <div class="lbl"></div>
+      <label class="chk"><input type="checkbox" data-set="avengers" ${s.avengers ? 'checked' : ''}> Avengers jetonu kullan (+3 puan, el değiştirebilir)</label>
+      <p class="tip">Splendor Marvel kurallarında hedef 16 puandır ve Avengers jetonu vardır. Kendi versiyonunda klasik kural (15) geçerliyse ayarı olduğu gibi bırak.</p>
+    </details>
+  </section>
+
+  <button class="primary" style="width:100%;padding:14px" data-act="toNobles">Devam: Soylu kartları →</button>
+  `;
+}
+
+function viewNobleSetup() {
+  return `
+  <h1><span>MARVEL</span> Splendor</h1>
+  <p class="sub">Masadaki ${state.nobles.length} soylu kartının gereksinimlerini gir. Sayaç, bir oyuncu bir soylunun şartını sağladığında tur sonunda otomatik verir ve kime ne kadar kaldığını gösterir.</p>
+  ${state.nobles.map(n => `
+    <section class="panel">
+      <div class="row" style="justify-content:space-between;margin-bottom:8px">
+        <b>👑 Soylu ${n.id + 1}</b>
+        <span class="muted">${n.pts} puan</span>
+      </div>
+      <div class="reqgrid">
+        ${n.req.map((v, i) => `<div class="cell" style="border-color:${gemColor(i)}">
+          <button data-act="req" data-n="${n.id}" data-g="${i}" data-d="1">＋</button>
+          <b>${v}</b>
+          <button data-act="req" data-n="${n.id}" data-g="${i}" data-d="-1">－</button>
+          <span class="muted" style="font-size:10px">${h(gemName(i))}</span>
+        </div>`).join('')}
+      </div>
+      <div class="row" style="margin-top:8px">
+        <span class="muted" style="font-size:13px">Hızlı:</span>
+        <button class="small" data-act="reqclear" data-n="${n.id}">Temizle</button>
+      </div>
+    </section>`).join('')}
+  <p class="tip">Klasik soylular ya iki renkten 4'er ya da üç renkten 3'er kart ister. Gereksinimini girmediğin soyluyu oyun sırasında elle verebilirsin.</p>
+  <div class="row" style="margin-top:12px">
+    <button class="ghost" data-act="backSetup">← Geri</button>
+    <button class="primary grow" style="padding:14px" data-act="start">Oyunu başlat</button>
+  </div>`;
+}
+
+function playerCard(p, i) {
+  const s = state.settings;
+  const sc = score(i);
+  const b = bonuses(p);
+  const active = state.phase === 'game' && state.turn.cur === i;
+  const myNobles = state.nobles.filter(n => n.owner === i);
+  const pct = Math.min(100, sc / s.target * 100);
+  const lvls = [1, 2, 3].map(l => p.cards.filter(c => c.lvl === l).length);
+  return `
+  <article class="pcard ${active ? 'active' : ''}">
+    <div class="top">
+      <div>
+        <div class="name">${h(p.name)}${state.turn.first === i ? '<span class="first">İLK</span>' : ''}</div>
+        <div class="muted" style="font-size:12px">Kart ${cardPoints(p)} · Soylu ${noblePoints(i)}${s.avengers ? ` · Avengers ${avengersPoints(i)}` : ''}${p.adj ? ` · Düzeltme ${p.adj > 0 ? '+' : ''}${p.adj}` : ''}</div>
+      </div>
+      <div class="score"><b>${sc}</b><div class="of">/ ${s.target}</div></div>
+    </div>
+    <div class="bar"><i style="width:${pct}%"></i></div>
+    <div class="bonuses">
+      ${b.map((v, g) => `<div class="bonus" style="border-color:${gemColor(g)}"><b>${v}</b><span>${h(gemName(g))}</span></div>`).join('')}
+    </div>
+    <div class="facts">
+      <span>Kart: <b>${p.cards.length}</b> <span class="muted">(${lvls.join('/')})</span></span>
+      <span class="${p.reserved >= MAX_RESERVED ? 'warn' : ''}">Ayrılmış: <b>${p.reserved}/${MAX_RESERVED}</b></span>
+      ${s.avengers && state.avengersOwner === i ? '<span class="warn">🛡️ Avengers</span>' : ''}
+    </div>
+    ${myNobles.length ? `<div class="nobleline">👑 ${myNobles.map(n => `Soylu ${n.id + 1}`).join(', ')}</div>` : ''}
+    ${active ? `
+      <div class="actions">
+        <button data-act="tokens">💎 Jeton aldı</button>
+        <button data-act="reserve" ${p.reserved >= MAX_RESERVED ? 'disabled' : ''}>📌 Kart ayırdı</button>
+        <button class="primary wide" data-act="openBuy">🃏 Kart satın aldı</button>
+      </div>` : ''}
+    <div class="row" style="margin-top:8px;justify-content:flex-end">
+      <button class="small ghost" data-act="edit" data-v="${i}">✏️ Düzenle</button>
+    </div>
+  </article>`;
+}
+
+function viewNobles() {
+  const n = state.players.length;
+  return `<section class="panel">
+    <h2>👑 Soylular</h2>
+    <div class="nobles">
+      ${state.nobles.map(nb => {
+        const owner = nb.owner !== null ? state.players[nb.owner].name : null;
+        let near = '';
+        if (!owner && hasReq(nb)) {
+          const close = state.players.map((p, i) => ({ name: p.name, m: missingFor(i, nb) }))
+            .sort((a, b) => a.m - b.m);
+          near = `<div class="near">${close.slice(0, n).map(c => `${h(c.name)}: <b style="color:var(--text)">${c.m}</b> eksik`).join('<br>')}</div>`;
+        }
+        return `<div class="noble ${owner ? 'taken' : ''}">
+          <div class="nt"><span>Soylu ${nb.id + 1}</span><span>${nb.pts}★</span></div>
+          ${hasReq(nb) ? `<div class="reqs">${nb.req.map((v, g) => v ? `<span class="req" style="background:${gemColor(g)}">${v}</span>` : '').join('')}</div>` : '<div class="muted">Gereksinim girilmedi</div>'}
+          ${owner ? `<div class="near">✔ ${h(owner)}</div>` : near}
+        </div>`;
+      }).join('')}
+    </div>
+  </section>`;
+}
+
+function viewGame() {
+  const cur = state.players[state.turn.cur];
+  const lastIdx = (state.turn.first + state.players.length - 1) % state.players.length;
+  return `
+  <div class="status">
+    <div class="row">
+      <div class="grow">
+        <div class="round">Tur ${state.turn.round} · Hedef ${state.settings.target}</div>
+        <div class="who">Sıra: ${h(cur.name)}</div>
+      </div>
+      <button class="small" data-act="undo" ${history.length ? '' : 'disabled'}>↶ Geri al</button>
+      <button class="small ghost" data-act="menu">☰</button>
+    </div>
+    ${state.finalRound ? `<div class="banner">🔥 SON TUR — ${h(state.players[lastIdx].name)} oynadıktan sonra oyun biter</div>` : ''}
+  </div>
+
+  <div class="players">${state.players.map(playerCard).join('')}</div>
+  <div style="height:12px"></div>
+  ${viewNobles()}
+
+  <section class="panel">
+    <div class="row">
+      <button class="grow" data-act="manualNoble" ${state.nobles.some(n => n.owner === null) ? '' : 'disabled'}>👑 ${h(cur.name)} için soylu ver (elle)</button>
+      ${state.settings.avengers ? `<button class="grow" data-act="avengers">🛡️ Avengers jetonu</button>` : ''}
+    </div>
+    <p class="tip">Hatırlatma: turda tek eylem yapılır; tur sonunda elde en fazla ${MAX_TOKENS} jeton kalabilir. Aynı renkten 2 jeton almak için yığında en az 4 jeton olmalı.</p>
+  </section>
+
+  <section class="panel">
+    <details>
+      <summary>Kurulum bilgisi</summary>
+      <div style="margin-top:8px">${refTable(state.players.length)}</div>
+    </details>
+  </section>
+
+  <section class="panel">
+    <details>
+      <summary>Oyun kaydı (${state.log.length})</summary>
+      <ol class="log" reversed>${state.log.map(l => `<li>${h(l)}</li>`).join('')}</ol>
+    </details>
+  </section>`;
+}
+
+function viewOver() {
+  const st = standings();
+  const best = st[0];
+  const winners = st.filter(x => x.s === best.s && x.c === best.c);
+  const medals = ['🥇', '🥈', '🥉', '4.'];
+  const tieNote = st.filter(x => x.s === best.s).length > 1
+    ? `<p class="tip">Puan eşitliği: en az kart satın alan oyuncu kazanır${winners.length > 1 ? ' — kart sayısı da eşit, galibiyet paylaşılıyor.' : '.'}</p>` : '';
+  return `
+  <h1><span>MARVEL</span> Splendor</h1>
+  <p class="sub">${state.turn.round} tur oynandı</p>
+  <section class="panel">
+    <h2>🏆 ${winners.map(w => h(w.p.name)).join(' & ')} kazandı!</h2>
+    ${st.map((x, k) => `
+      <div class="rank ${winners.includes(x) ? 'win' : ''}">
+        <div class="pos">${medals[k]}</div>
+        <div class="grow">
+          <b>${h(x.p.name)}</b>
+          <div class="muted" style="font-size:12px">${x.c} kart (${[1, 2, 3].map(l => x.p.cards.filter(c => c.lvl === l).length).join('/')}) · ${state.nobles.filter(n => n.owner === x.i).length} soylu · ${noblePoints(x.i)} soylu puanı</div>
+        </div>
+        <b style="font-size:24px">${x.s}</b>
+      </div>`).join('')}
+    ${tieNote}
+  </section>
+  <div class="players">${state.players.map(playerCard).join('')}</div>
+  <div style="height:12px"></div>
+  <div class="row">
+    <button class="ghost" data-act="undo" ${history.length ? '' : 'disabled'}>↶ Geri al</button>
+    <button class="grow" data-act="newGame">Yeni oyun</button>
+    <button class="primary grow" data-act="rematch">Rövanş (aynı oyuncular)</button>
+  </div>`;
+}
+
+/* ---------- Pencereler ---------- */
+
+function viewModal() {
+  const m = modal;
+  let body = '';
+  if (m.type === 'buy') {
+    const opts = LEVEL_POINTS[m.lvl];
+    body = `
+      <h3>🃏 ${h(state.players[state.turn.cur].name)} kart aldı</h3>
+      <div class="lbl">Seviye</div>
+      <div class="seg">${[1, 2, 3].map(l => `<button class="${m.lvl === l ? 'sel' : ''}" data-act="bLvl" data-v="${l}">${'●'.repeat(l)} ${l}</button>`).join('')}</div>
+      <div class="lbl">Kartın verdiği bonus taşı</div>
+      <div class="gempick">${[0, 1, 2, 3, 4].map(g => `<button class="${m.gem === g ? 'sel' : ''}" style="border-top-color:${gemColor(g)}" data-act="bGem" data-v="${g}">${h(gemName(g))}</button>`).join('')}</div>
+      <div class="lbl">Puan (kartın sol üstü)</div>
+      <div class="ptpick">${[0, 1, 2, 3, 4, 5].map(v => `<button class="${m.pts === v ? 'sel' : ''} ${opts.includes(v) ? '' : 'muted'}" data-act="bPts" data-v="${v}">${v}</button>`).join('')}</div>
+      <div class="lbl"></div>
+      <label class="chk"><input type="checkbox" data-act="bRes" ${m.fromReserve ? 'checked' : ''} ${state.players[state.turn.cur].reserved ? '' : 'disabled'}> Ayrılmış kartlarımdan aldım</label>
+      <div class="row" style="margin-top:14px">
+        <button class="ghost" data-act="close">Vazgeç</button>
+        <button class="primary grow" data-act="confirmBuy" ${m.gem === null ? 'disabled' : ''}>Onayla ve sırayı geçir</button>
+      </div>`;
+  } else if (m.type === 'chooseNoble' || m.type === 'manualNoble') {
+    const ids = m.type === 'chooseNoble' ? m.ids : state.nobles.filter(n => n.owner === null).map(n => n.id);
+    body = `
+      <h3>👑 ${h(state.players[m.pi].name)} — hangi soylu?</h3>
+      <p class="tip">${m.type === 'chooseNoble' ? 'Birden fazla soylunun şartı sağlandı. Kurala göre turda yalnızca biri gelir — birini seç.' : 'Gereksinimi sağlanan soyluyu seç.'}</p>
+      ${ids.map(id => {
+        const nb = state.nobles[id];
+        return `<button style="width:100%;margin-top:8px;text-align:left" data-act="pickNoble" data-v="${id}">
+          Soylu ${id + 1} · ${nb.pts} puan
+          <span class="reqs" style="margin-top:6px">${nb.req.map((v, g) => v ? `<span class="req" style="background:${gemColor(g)}">${v}</span>` : '').join('')}</span>
+        </button>`;
+      }).join('')}
+      ${m.type === 'manualNoble' ? '<button class="ghost" style="width:100%;margin-top:12px" data-act="close">Vazgeç</button>' : ''}`;
+  } else if (m.type === 'avengers') {
+    body = `
+      <h3>🛡️ Avengers jetonu kimde?</h3>
+      ${state.players.map((p, i) => `<button style="width:100%;margin-top:8px" class="${state.avengersOwner === i ? 'sel' : ''}" data-act="setAv" data-v="${i}">${h(p.name)}</button>`).join('')}
+      <button style="width:100%;margin-top:8px" class="${state.avengersOwner === null ? 'sel' : ''}" data-act="setAv" data-v="-1">Kimsede değil</button>
+      <button class="ghost" style="width:100%;margin-top:12px" data-act="close">Kapat</button>`;
+  } else if (m.type === 'edit') {
+    const p = state.players[m.pi];
+    body = `
+      <h3>✏️ ${h(p.name)}</h3>
+      <div class="row">
+        <span class="grow">Puan düzeltmesi</span>
+        <span class="stepper"><button data-act="adj" data-d="-1">−</button><output>${p.adj > 0 ? '+' : ''}${p.adj}</output><button data-act="adj" data-d="1">+</button></span>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <span class="grow">Ayrılmış kart</span>
+        <span class="stepper"><button data-act="resv" data-d="-1">−</button><output>${p.reserved}</output><button data-act="resv" data-d="1">+</button></span>
+      </div>
+      <div class="lbl">Soylular</div>
+      ${state.nobles.map(nb => `<label class="chk" style="margin:6px 0"><input type="checkbox" data-act="toggleNoble" data-v="${nb.id}" ${nb.owner === m.pi ? 'checked' : ''} ${nb.owner !== null && nb.owner !== m.pi ? 'disabled' : ''}> Soylu ${nb.id + 1}${nb.owner !== null && nb.owner !== m.pi ? ` <span class="muted">(${h(state.players[nb.owner].name)})</span>` : ''}</label>`).join('')}
+      <div class="lbl">Satın alınan kartlar (${p.cards.length})</div>
+      <ul class="cardlist">
+        ${p.cards.map((c, k) => `<li>${dot(c.gem)}<span class="grow">${c.lvl}. seviye · ${h(gemName(c.gem))}</span><b>${c.pts}★</b><button class="small ghost" data-act="delCard" data-v="${k}">Sil</button></li>`).join('') || '<li class="muted">Henüz kart yok</li>'}
+      </ul>
+      <button class="primary" style="width:100%;margin-top:14px" data-act="close">Tamam</button>`;
+  } else if (m.type === 'menu') {
+    body = `
+      <h3>Menü</h3>
+      <button style="width:100%;margin-top:8px" data-act="skip">⏭ Sırayı elle geçir</button>
+      <button style="width:100%;margin-top:8px" data-act="endNow">🏁 Oyunu şimdi bitir</button>
+      <button style="width:100%;margin-top:8px" data-act="rematch">🔁 Rövanş (aynı oyuncular)</button>
+      <button style="width:100%;margin-top:8px" data-act="newGame">🆕 Yeni oyun</button>
+      <button class="ghost" style="width:100%;margin-top:12px" data-act="close">Kapat</button>`;
+  }
+  return `<div class="backdrop" data-act="backdrop"><div class="sheet">${body}</div></div>`;
+}
+
+function toast(text) {
+  document.querySelectorAll('.toast').forEach(t => t.remove());
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = text;
+  document.body.appendChild(t);
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.remove(), 3200);
+}
+
+/* ===================== Olaylar ===================== */
+
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-act]');
+  if (!el) return;
+  const a = el.dataset.act;
+  const v = el.dataset.v !== undefined ? Number(el.dataset.v) : null;
+  if (a === 'backdrop') { if (e.target === el && modal && modal.type !== 'chooseNoble') { modal = null; render(); } return; }
+  if (el.type === 'checkbox') return; // change olayında işlenir
+
+  switch (a) {
+    // Kurulum
+    case 'count': state.settings.count = v; if (state.turn.first >= v) state.turn.first = 0; break;
+    case 'first': state.turn.first = v; break;
+    case 'randfirst': state.turn.first = Math.floor(Math.random() * state.settings.count); toast(`İlk oyuncu: ${(state.names[state.turn.first] || '').trim() || `Oyuncu ${state.turn.first + 1}`}`); break;
+    case 'toNobles': startNobleSetup(); return;
+    case 'backSetup': state.phase = 'setup'; break;
+    case 'req': {
+      const n = state.nobles[Number(el.dataset.n)];
+      const g = Number(el.dataset.g);
+      n.req[g] = Math.max(0, Math.min(7, n.req[g] + Number(el.dataset.d)));
+      break;
+    }
+    case 'reqclear': state.nobles[Number(el.dataset.n)].req = [0, 0, 0, 0, 0]; break;
+    case 'start': startGame(); return;
+
+    // Oyun eylemleri
+    case 'tokens': act('tokens'); return;
+    case 'reserve': act('reserve'); return;
+    case 'openBuy': modal = { type: 'buy', lvl: 1, gem: null, pts: 0, fromReserve: false }; break;
+    case 'bLvl': modal.lvl = v; modal.pts = LEVEL_POINTS[v][0]; break;
+    case 'bGem': modal.gem = v; break;
+    case 'bPts': modal.pts = v; break;
+    case 'confirmBuy': act('buy', modal); return;
+    case 'pickNoble': {
+      const pi = modal.pi;
+      const chosen = modal.type === 'chooseNoble';
+      if (!chosen) snapshot();
+      giveNoble(pi, v);
+      modal = null;
+      if (chosen) { finishTurn(); return; }
+      break;
+    }
+    case 'manualNoble': modal = { type: 'manualNoble', pi: state.turn.cur }; break;
+    case 'avengers': modal = { type: 'avengers' }; break;
+    case 'setAv': snapshot(); state.avengersOwner = v < 0 ? null : v; addLog(`🛡️ Avengers jetonu: ${v < 0 ? 'kimsede değil' : state.players[v].name}`); break;
+    case 'edit': modal = { type: 'edit', pi: v }; break;
+    case 'adj': snapshot(); state.players[modal.pi].adj += Number(el.dataset.d); break;
+    case 'resv': { snapshot(); const p = state.players[modal.pi]; p.reserved = Math.max(0, Math.min(MAX_RESERVED, p.reserved + Number(el.dataset.d))); break; }
+    case 'delCard': snapshot(); state.players[modal.pi].cards.splice(v, 1); break;
+    case 'menu': modal = { type: 'menu' }; break;
+    case 'skip': snapshot(); modal = null; addLog(`${state.players[state.turn.cur].name} sırası elle geçildi`); finishTurn(); return;
+    case 'endNow': if (confirm('Oyun şimdi bitirilsin mi?')) { snapshot(); modal = null; endGame(); } return;
+    case 'undo': undo(); return;
+    case 'close': modal = null; break;
+    case 'rematch':
+      if (state.phase !== 'over' && !confirm('Mevcut oyun silinip aynı oyuncularla yeniden başlansın mı?')) return;
+      snapshot();
+      state.players.forEach(p => { p.cards = []; p.reserved = 0; p.adj = 0; });
+      state.nobles.forEach(n => { n.owner = null; });
+      modal = null;
+      // soylular masada değişir: gereksinim ekranına dön
+      state.phase = 'nobles';
+      state.nobles.forEach(n => { n.req = [0, 0, 0, 0, 0]; });
+      break;
+    case 'newGame':
+      if (state.phase !== 'over' && !confirm('Mevcut oyun silinsin mi?')) return;
+      state = freshState(state);
+      history = [];
+      modal = null;
+      break;
+    default: return;
+  }
+  render();
+});
+
+document.addEventListener('change', e => {
+  const el = e.target;
+  if (el.dataset.act === 'bRes') { modal.fromReserve = el.checked; return; }
+  if (el.dataset.act === 'toggleNoble') {
+    snapshot();
+    const nb = state.nobles[Number(el.dataset.v)];
+    nb.owner = el.checked ? modal.pi : null;
+    addLog(`👑 Soylu ${nb.id + 1} ${el.checked ? state.players[modal.pi].name + ' oyuncusuna verildi' : 'geri alındı'} (elle)`);
+    render();
+    return;
+  }
+  if (el.dataset.set === 'avengers') { state.settings.avengers = el.checked; save(); return; }
+  if (el.dataset.set === 'target') {
+    const t = parseInt(el.value, 10);
+    state.settings.target = Number.isFinite(t) ? Math.max(5, Math.min(40, t)) : DEFAULT_TARGET;
+    render();
+  }
+});
+
+document.addEventListener('input', e => {
+  const el = e.target;
+  if (el.dataset.name !== undefined) state.names[Number(el.dataset.name)] = el.value;
+  else if (el.dataset.gem !== undefined) state.settings.gems[Number(el.dataset.gem)] = el.value;
+  else if (el.dataset.set === 'joker') state.settings.joker = el.value;
+  else return;
+  save();
+});
+
+render();
+</script>
+</body>
+</html>
