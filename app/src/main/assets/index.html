@@ -25,7 +25,10 @@
     --gj: #22c55e; /* Joker (Zaman) */
   }
   * { box-sizing: border-box; }
-  html, body { margin: 0; }
+  html, body { margin: 0; overscroll-behavior: none; }
+  * { -webkit-tap-highlight-color: transparent; }
+  body { -webkit-user-select: none; user-select: none; }
+  input { -webkit-user-select: text; user-select: text; }
   body {
     background: radial-gradient(1200px 600px at 50% -200px, #3a1020 0%, var(--bg) 60%) fixed, var(--bg);
     color: var(--text);
@@ -661,6 +664,14 @@ function toast(text) {
 }
 
 /* ===================== Olaylar ===================== */
+
+// Android geri tuşu: açık pencere varsa kapatır (true döner), yoksa uygulama kapanır
+window.appBack = () => {
+  if (modal && modal.type !== 'chooseNoble') { modal = null; render(); return true; }
+  if (modal) return true;
+  if (state.phase === 'nobles') { state.phase = 'setup'; render(); return true; }
+  return false;
+};
 
 document.addEventListener('click', e => {
   const el = e.target.closest('[data-act]');

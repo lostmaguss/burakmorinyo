@@ -1,0 +1,49 @@
+plugins {
+    id 'com.android.application'
+}
+
+// Sürüm numaraları GitHub Actions'tan gelir (-PversionCode=.. -PversionName=..)
+def appVersionCode = (project.findProperty('versionCode') ?: '1') as int
+def appVersionName = (project.findProperty('versionName') ?: '1.0.0') as String
+
+android {
+    namespace 'com.burakmorinyo.splendorsayac'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.burakmorinyo.splendorsayac'
+        minSdk 21
+        targetSdk 35
+        versionCode appVersionCode
+        versionName appVersionName
+    }
+
+    signingConfigs {
+        release {
+            // İstenirse GitHub Secrets ile kendi anahtarını verebilirsin; yoksa repodaki anahtar kullanılır.
+            // Hep aynı anahtarla imzalandığı için yeni sürümler eskisinin üzerine kurulur.
+            def ksPath = System.getenv('SIGNING_KEYSTORE_PATH')
+            storeFile ksPath ? file(ksPath) : file('release.keystore')
+            storePassword System.getenv('SIGNING_STORE_PASSWORD') ?: 'splendor123'
+            keyAlias System.getenv('SIGNING_KEY_ALIAS') ?: 'sayac'
+            keyPassword System.getenv('SIGNING_KEY_PASSWORD') ?: 'splendor123'
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.release
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    lint {
+        checkReleaseBuilds false
+        abortOnError false
+    }
+}

@@ -1,0 +1,53 @@
+name: Android APK
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+
+      - name: APK derle
+        run: |
+          VERSION="1.0.${{ github.run_number }}"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          gradle :app:assembleRelease --no-daemon \
+            -PversionCode=${{ github.run_number }} -PversionName=$VERSION
+          mkdir -p dist
+          cp app/build/outputs/apk/release/app-release.apk "dist/MarvelSplendorSayac-v$VERSION.apk"
+
+      - name: APK'yı yükle (Actions sekmesi)
+        uses: actions/upload-artifact@v4
+        with:
+          name: MarvelSplendorSayac-v${{ env.VERSION }}
+          path: dist/*.apk
+
+      # Varsayılan dalda herkesin indirebileceği bir sürüm (Releases) yayınlanır
+      - name: Sürüm yayınla
+        if: github.ref_name == github.event.repository.default_branch
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.VERSION }}
+          name: Marvel Splendor Sayaç v${{ env.VERSION }}
+          make_latest: true
+          files: dist/*.apk
+          body: |
+            Android telefona kurulum:
+            1. Aşağıdaki **MarvelSplendorSayac-v${{ env.VERSION }}.apk** dosyasını telefondan indir.
+            2. Dosyayı aç; "bilinmeyen kaynaklardan yükleme" izni sorulursa izin ver.
+            3. Kur ve aç. İnternet gerekmez. Yeni sürümler eskisinin üzerine kurulur, kayıtlı oyun silinmez.
