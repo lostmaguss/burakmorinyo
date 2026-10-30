@@ -127,12 +127,13 @@ private fun Feature(icon: ImageVector, title: String, text: String) {
 @Composable
 fun LockScreen(showButton: Boolean, onUnlock: () -> Unit) {
     Box(Modifier.fillMaxSize().background(heroBrush), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+        // showButton false iken veriler yüklenirken gösterilen sade açılış ekranıdır
+        if (showButton) Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
             Box(
                 Modifier.size(84.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.15f)),
                 contentAlignment = Alignment.Center
             ) { Icon(Icons.Rounded.Lock, null, tint = Color.White, modifier = Modifier.size(38.dp)) }
-            if (showButton) {
+            run {
                 Spacer(Modifier.height(20.dp))
                 Text("Gelir Gider kilitli", color = Color.White, style = MaterialTheme.typography.titleLarge)
                 Spacer(Modifier.height(20.dp))
