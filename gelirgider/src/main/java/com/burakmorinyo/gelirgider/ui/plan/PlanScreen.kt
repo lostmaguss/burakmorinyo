@@ -127,7 +127,7 @@ private fun AppData.averageSpend(categoryId: Long?): Long {
     var p = currentPeriod.previous(settings.periodStartDay)
     val values = mutableListOf<Long>()
     repeat(3) {
-        val t = Finance.inPeriod(transactions, p).filter { it.type == TxType.EXPENSE && (categoryId == null || it.categoryId == categoryId) }
+        val t = Finance.inPeriod(statTransactions, p).filter { it.type == TxType.EXPENSE && (categoryId == null || it.categoryId == categoryId) }
         values += t.sumOf { it.amount }
         p = p.previous(settings.periodStartDay)
     }
@@ -137,7 +137,7 @@ private fun AppData.averageSpend(categoryId: Long?): Long {
 
 private fun LazyListScope.budgetTab(data: AppData, vm: MainViewModel) {
     val period = data.currentPeriod
-    val txs = Finance.inPeriod(data.transactions, period)
+    val txs = Finance.inPeriod(data.statTransactions, period)
     val statuses = Finance.budgetStatuses(data.budgets, txs, data.categoryMap)
     val overall = statuses.firstOrNull { it.budget.categoryId == null }
     val daysLeft = (period.days - period.elapsedDays() + 1).coerceAtLeast(1)

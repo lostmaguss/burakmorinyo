@@ -24,7 +24,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.CompareArrows
 import androidx.compose.material.icons.automirrored.rounded.ReceiptLong
-import androidx.compose.material.icons.rounded.AccountBalance
+import androidx.compose.material.icons.rounded.DocumentScanner
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.ArrowDownward
 import androidx.compose.material.icons.rounded.ArrowUpward
@@ -61,6 +61,7 @@ import com.burakmorinyo.gelirgider.domain.short
 import com.burakmorinyo.gelirgider.domain.toLocalDate
 import com.burakmorinyo.gelirgider.domain.today
 import com.burakmorinyo.gelirgider.ui.AppData
+import com.burakmorinyo.gelirgider.ui.accounts.netWorthEquivalents
 import com.burakmorinyo.gelirgider.ui.MainViewModel
 import com.burakmorinyo.gelirgider.ui.Routes
 import com.burakmorinyo.gelirgider.ui.components.AmountText
@@ -101,7 +102,7 @@ fun HomeScreen(data: AppData, vm: MainViewModel, nav: NavHostController) {
     val s = data.settings
     val model = remember(data) {
         val period = data.currentPeriod
-        val txs = Finance.inPeriod(data.transactions, period)
+        val txs = Finance.inPeriod(data.statTransactions, period)
         val budgets = Finance.budgetStatuses(data.budgets, txs, data.categoryMap)
         val upcoming = Finance.upcoming(data.recurring, data.balances, data.categoryMap)
         HomeModel(
@@ -111,7 +112,7 @@ fun HomeScreen(data: AppData, vm: MainViewModel, nav: NavHostController) {
             elapsed = period.elapsedDays(),
             daysLeft = period.days - period.elapsedDays() + 1,
             overallBudget = budgets.firstOrNull { it.budget.categoryId == null }?.limit,
-            insights = Finance.insights(period, s.periodStartDay, data.transactions, data.categoryMap, budgets, upcoming, data.recurring),
+            insights = Finance.insights(period, s.periodStartDay, data.statTransactions, data.categoryMap, budgets, upcoming, data.recurring),
             upcoming = upcoming.filter { !it.date.isAfter(today().plusDays(14)) },
             topCategories = Finance.categoryTotals(txs, TxType.EXPENSE, data.categoryMap)
         )
@@ -137,13 +138,13 @@ fun HomeScreen(data: AppData, vm: MainViewModel, nav: NavHostController) {
                 IconButton(onClick = { nav.navigate(Routes.SETTINGS) }) { Icon(Icons.Rounded.Settings, "Ayarlar") }
             }
         }
-        item { HeroCard(data.netWorth, model.income, model.expense) { nav.navigate(Routes.ACCOUNTS) } }
+        item { HeroCard(data.netWorth, netWorthEquivalents(data), model.income, model.expense) { nav.navigate(Routes.ACCOUNTS) } }
         item {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 QuickAction(Icons.Rounded.Remove, "Gider", LocalFinanceColors.current.expense) { nav.navigate(Routes.tx(type = TxType.EXPENSE)) }
                 QuickAction(Icons.Rounded.Add, "Gelir", LocalFinanceColors.current.income) { nav.navigate(Routes.tx(type = TxType.INCOME)) }
                 QuickAction(Icons.AutoMirrored.Rounded.CompareArrows, "Transfer", LocalFinanceColors.current.transfer) { nav.navigate(Routes.tx(type = TxType.TRANSFER)) }
-                QuickAction(Icons.Rounded.AccountBalance, "Hesaplar", MaterialTheme.colorScheme.primary) { nav.navigate(Routes.ACCOUNTS) }
+                QuickAction(Icons.Rounded.DocumentScanner, "Fiş tara", MaterialTheme.colorScheme.primary) { nav.navigate(Routes.tx(scan = true)) }
             }
         }
         item { SpendingCard(model, onClick = { nav.navigateTab(Routes.PLAN) }) }
@@ -170,7 +171,7 @@ fun HomeScreen(data: AppData, vm: MainViewModel, nav: NavHostController) {
         item {
             LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 items(data.balances.filter { !it.account.archived }) { b ->
-                    AccountChip(b) { nav.navigate(Routes.history(account = b.account.id)) }
+                    AccountChip(b, data) { nav.navigate(Routes.history(account = b.account.id)) }
                 }
                 item {
                     AppCard(Modifier.width(120.dp).height(118.dp), onClick = { nav.navigate(Routes.account()) }) {
@@ -212,7 +213,7 @@ private fun greeting(): String = when (LocalTime.now().hour) {
 }
 
 @Composable
-private fun HeroCard(netWorth: Long, income: Long, expense: Long, onClick: () -> Unit) {
+private fun HeroCard(netWorth: Long, equivalents: String?, income: Long, expense: Long, onClick: () -> Unit) {
     val fc = LocalFinanceColors.current
     Box(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(28.dp)).background(fc.heroGradient).clickable(onClick = onClick)
@@ -230,6 +231,7 @@ private fun HeroCard(netWorth: Long, income: Long, expense: Long, onClick: () ->
             Text("Toplam varlık", color = Color.White.copy(alpha = 0.8f), style = MaterialTheme.typography.labelLarge)
             Spacer(Modifier.height(4.dp))
             Text(Money.format(netWorth), color = Color.White, style = MaterialTheme.typography.displaySmall.merge(AmountStyle), maxLines = 1)
+            if (equivalents != null && !Money.hidden) Text(equivalents, color = Color.White.copy(alpha = 0.75f), style = MaterialTheme.typography.bodySmall)
             Spacer(Modifier.height(18.dp))
             Row(Modifier.fillMaxWidth()) {
                 HeroStat(Icons.Rounded.ArrowDownward, "Gelir", income, Modifier.weight(1f))
@@ -361,7 +363,7 @@ private fun UpcomingRow(u: Upcoming, vm: MainViewModel) {
 }
 
 @Composable
-private fun AccountChip(b: AccountBalance, onClick: () -> Unit) {
+private fun AccountChip(b: AccountBalance, data: AppData, onClick: () -> Unit) {
     val a = b.account
     AppCard(Modifier.width(170.dp).height(118.dp), onClick = onClick, padding = PaddingValues(14.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -372,7 +374,8 @@ private fun AccountChip(b: AccountBalance, onClick: () -> Unit) {
         Spacer(Modifier.weight(1f))
         AmountText(
             b.balance, style = MaterialTheme.typography.titleMedium,
-            color = if (b.balance < 0) LocalFinanceColors.current.expense else MaterialTheme.colorScheme.onSurface
+            color = if (b.balance < 0) LocalFinanceColors.current.expense else MaterialTheme.colorScheme.onSurface,
+            currency = a.currency
         )
         val card = b.card
         if (a.type == AccountType.CREDIT_CARD && card != null) {
@@ -380,6 +383,9 @@ private fun AccountChip(b: AccountBalance, onClick: () -> Unit) {
                 if (card.remainingDue > 0) "Son ödeme ${card.dueDate.short()}" else "Kullanılabilir ${Money.compact(card.available)}",
                 style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1
             )
+        } else if (a.currency != data.baseCode && data.rates.tryPer(a.currency) != null) {
+            Text("≈ ${Money.format(data.toBase(b.balance, a.currency))}", style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
         } else Text(a.type.label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
     }
 }

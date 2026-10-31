@@ -15,6 +15,8 @@ import com.burakmorinyo.gelirgider.data.Repository
 import com.burakmorinyo.gelirgider.data.Transaction
 import com.burakmorinyo.gelirgider.data.TxType
 import com.burakmorinyo.gelirgider.domain.AccountBalance
+import com.burakmorinyo.gelirgider.domain.Currencies
+import com.burakmorinyo.gelirgider.domain.Rates
 import com.burakmorinyo.gelirgider.domain.Finance
 import com.burakmorinyo.gelirgider.domain.Period
 import com.burakmorinyo.gelirgider.domain.periodFor
@@ -47,7 +49,17 @@ data class AppData(
     val accountMap: Map<Long, Account> by lazy { accounts.associateBy { it.id } }
     val activeAccounts: List<Account> by lazy { accounts.filter { !it.archived } }
     val balances: List<AccountBalance> by lazy { Finance.balances(accounts, transactions) }
-    val netWorth: Long by lazy { balances.filter { it.account.includeInTotal && !it.account.archived }.sumOf { it.balance } }
+    val rates: Rates get() = settings.rates
+    /** Ana para biriminin kodu (₺ → TRY) */
+    val baseCode: String by lazy { Currencies.codeForSymbol(settings.currency) }
+    val netWorth: Long by lazy { Finance.netWorth(balances, rates, baseCode) }
+    /** İstatistikler için ana para birimine çevrilmiş işlemler */
+    val statTransactions: List<Transaction> by lazy { Finance.toBase(transactions, accountMap, rates, baseCode) }
+    val statById: Map<Long, Transaction> by lazy { statTransactions.associateBy { it.id } }
+    val hasForeignAccounts: Boolean by lazy { accounts.any { !it.archived && it.currency != baseCode } }
+
+    fun currencyOf(accountId: Long?): String = accountId?.let { accountMap[it]?.currency } ?: baseCode
+    fun toBase(amount: Long, code: String): Long = rates.convertOrSame(amount, code, baseCode)
     val currentPeriod: Period by lazy { periodFor(today(), settings.periodStartDay) }
 
     fun categoriesOf(type: TxType) = categories.filter { it.type == type && !it.archived }
@@ -128,6 +140,14 @@ class MainViewModel(val repo: Repository) : ViewModel() {
     fun saveDebt(d: Debt) = launch { repo.saveDebt(d) }
     fun deleteDebt(d: Debt) = launch { repo.deleteDebt(d) }
     fun payDebt(d: Debt, amount: Long, accountId: Long?) = launch { repo.payDebt(d, amount, accountId) }
+
+    fun refreshRates() = launch {
+        repo.refreshRates(maxAgeMs = 0)
+            .onSuccess { message("Kurlar güncellendi (${it.source})") }
+            .onFailure { message("Kurlar alınamadı. İnternet bağlantını kontrol et.") }
+    }
+
+    suspend fun usdRateOn(date: java.time.LocalDate): Double? = runCatching { repo.usdRateOn(date) }.getOrNull()
 
     suspend fun exportJson(): String = Backup.toJson(repo.snapshot())
     suspend fun exportCsv(): String = Backup.toCsv(repo.snapshot())

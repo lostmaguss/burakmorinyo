@@ -111,12 +111,15 @@ fun TextInput(value: String, onChange: (String) -> Unit, label: String, modifier
 
 /** Tutar alanı: metni tutar, [Money.parse] ile kuruşa çevrilir */
 @Composable
-fun AmountInput(value: String, onChange: (String) -> Unit, label: String, modifier: Modifier = Modifier, supporting: String? = null, isError: Boolean = false) {
+fun AmountInput(
+    value: String, onChange: (String) -> Unit, label: String, modifier: Modifier = Modifier,
+    supporting: String? = null, isError: Boolean = false, suffix: String = Money.symbol
+) {
     OutlinedTextField(
         value = value,
         onValueChange = { t -> onChange(t.filter { it.isDigit() || it == ',' || it == '.' }) },
         label = { Text(label) },
-        suffix = { Text(Money.symbol) },
+        suffix = { Text(suffix) },
         singleLine = true,
         isError = isError,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),

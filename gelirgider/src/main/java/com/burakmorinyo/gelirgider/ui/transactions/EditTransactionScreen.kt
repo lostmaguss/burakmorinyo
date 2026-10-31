@@ -36,10 +36,12 @@ import androidx.compose.material.icons.automirrored.rounded.Notes
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.DeleteOutline
+import androidx.compose.material.icons.rounded.DocumentScanner
 import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material.icons.rounded.Repeat
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -89,6 +91,8 @@ import com.burakmorinyo.gelirgider.data.Recurring
 import com.burakmorinyo.gelirgider.data.Transaction
 import com.burakmorinyo.gelirgider.data.TxType
 import com.burakmorinyo.gelirgider.domain.Calculator
+import com.burakmorinyo.gelirgider.domain.Currencies
+import com.burakmorinyo.gelirgider.domain.formatIn
 import com.burakmorinyo.gelirgider.domain.Money
 import com.burakmorinyo.gelirgider.domain.dayHeader
 import com.burakmorinyo.gelirgider.domain.nextOccurrence
@@ -101,6 +105,7 @@ import com.burakmorinyo.gelirgider.domain.withNowTime
 import com.burakmorinyo.gelirgider.ui.AppData
 import com.burakmorinyo.gelirgider.ui.MainViewModel
 import com.burakmorinyo.gelirgider.ui.Routes
+import com.burakmorinyo.gelirgider.ui.components.AmountInput
 import com.burakmorinyo.gelirgider.ui.components.AppIcons
 import com.burakmorinyo.gelirgider.ui.components.asColor
 import com.burakmorinyo.gelirgider.ui.components.typeColor
@@ -111,7 +116,7 @@ import java.time.ZoneOffset
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
-fun EditTransactionScreen(data: AppData, vm: MainViewModel, nav: NavHostController, id: Long, initialType: TxType) {
+fun EditTransactionScreen(data: AppData, vm: MainViewModel, nav: NavHostController, id: Long, initialType: TxType, startScan: Boolean = false) {
     val existing = remember(id, data.loaded) { if (id != 0L) data.transactions.firstOrNull { it.id == id } else null }
     if (id != 0L && existing == null) return
 
@@ -134,6 +139,11 @@ fun EditTransactionScreen(data: AppData, vm: MainViewModel, nav: NavHostControll
     var showDatePicker by remember { mutableStateOf(false) }
     var showDelete by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
+    // Farklı para birimli hesaplar arası transferde hedefe giren miktar (boşsa kurla hesaplanır)
+    var toAmountText by rememberSaveable { mutableStateOf(existing?.toAmount?.let { Money.toInput(it) } ?: "") }
+    var scanMenu by remember { mutableStateOf(startScan) }
+    var scanning by remember { mutableStateOf(false) }
+    var scanResult by remember { mutableStateOf<String?>(null) }
 
     val date = LocalDate.ofEpochDay(dateEpochDay)
     val color by animateColorAsState(typeColor(type), label = "type")
@@ -141,6 +151,11 @@ fun EditTransactionScreen(data: AppData, vm: MainViewModel, nav: NavHostControll
     val account = data.accountMap[accountId]
     val isCard = account?.type == AccountType.CREDIT_CARD
     val isNew = existing == null
+    val fromCode = data.currencyOf(accountId)
+    val toCode = data.currencyOf(toAccountId)
+    val crossCurrency = type == TxType.TRANSFER && toAccountId != 0L && fromCode != toCode
+    val suggestedToAmount = if (crossCurrency) data.rates.convert(amount, fromCode, toCode) else null
+    val toAmount = if (crossCurrency) Money.parse(toAmountText) ?: suggestedToAmount else null
     val focus = LocalFocusManager.current
     val haptic = LocalHapticFeedback.current
     val categories = remember(type, data) { data.categoriesByUsage(type) }
@@ -171,6 +186,7 @@ fun EditTransactionScreen(data: AppData, vm: MainViewModel, nav: NavHostControll
             amount <= 0 -> "Tutar gir"
             accountId == 0L -> "Hesap seç"
             type == TxType.TRANSFER && (toAccountId == 0L || toAccountId == accountId) -> "Farklı bir hedef hesap seç"
+            crossCurrency && (toAmount ?: 0) <= 0 -> "Hedefe giren miktarı yaz"
             type != TxType.TRANSFER && categoryId == 0L -> "Kategori seç"
             else -> null
         }
@@ -183,7 +199,8 @@ fun EditTransactionScreen(data: AppData, vm: MainViewModel, nav: NavHostControll
             toAccountId = if (type == TxType.TRANSFER) toAccountId else null,
             categoryId = if (type == TxType.TRANSFER) null else categoryId,
             date = millis,
-            note = note.trim()
+            note = note.trim(),
+            toAmount = toAmount
         )
         val recurring = if (isNew && repeat && type != TxType.TRANSFER) Recurring(
             title = note.trim().ifBlank { data.categoryMap[categoryId]?.name ?: "Tekrarlayan" },
@@ -216,19 +233,46 @@ fun EditTransactionScreen(data: AppData, vm: MainViewModel, nav: NavHostControll
                 type = it; categoryId = 0L; error = null
             }
             if (!isNew) IconButton(onClick = { showDelete = true }) { Icon(Icons.Rounded.DeleteOutline, "Sil") }
-            else Spacer(Modifier.width(48.dp))
+            else Box {
+                IconButton(onClick = { scanMenu = true }) { Icon(Icons.Rounded.DocumentScanner, "Fiş tara") }
+                ReceiptScanMenu(
+                    expanded = scanMenu,
+                    onDismiss = { scanMenu = false },
+                    onStart = { scanning = true; scanResult = null },
+                    onResult = { info ->
+                        scanning = false
+                        if (info == null) { scanResult = "Fiş okunamadı. Daha aydınlık bir yerde, fişi düz tutarak tekrar dene."; return@ReceiptScanMenu }
+                        type = TxType.EXPENSE
+                        info.total?.let { expr = Money.toInput(it) }
+                        info.date?.let { dateEpochDay = it.toEpochDay() }
+                        info.merchant?.let { note = it }
+                        // Kategori: önce bu mağazaya daha önce verdiğin kategori, sonra fişten tahmin
+                        val learned = info.merchant?.let { m ->
+                            data.transactions.filter { it.note.equals(m, ignoreCase = true) && it.categoryId != null }
+                                .groupingBy { it.categoryId!! }.eachCount().maxByOrNull { it.value }?.key
+                        }
+                        val guessed = info.categoryName?.let { n -> data.categoriesOf(TxType.EXPENSE).firstOrNull { it.name == n }?.id }
+                        (learned ?: guessed)?.let { categoryId = it }
+                        error = null
+                        scanResult = listOfNotNull(
+                            info.total?.let { "Toplam ${Money.format(it, reveal = true)}" } ?: "Toplam bulunamadı",
+                            info.merchant, info.date?.dayHeader()
+                        ).joinToString(" · ") + " — kontrol edip kaydet."
+                    }
+                )
+            }
         }
 
         // Tutar
         Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             val shown = expr.ifEmpty { "0" }
             Text(
-                "$shown ${data.settings.currency}",
+                "$shown ${Currencies.get(fromCode).symbol}",
                 style = MaterialTheme.typography.displaySmall.merge(AmountStyle).copy(fontSize = if (shown.length > 12) 30.sp else 42.sp),
                 color = color, maxLines = 1, textAlign = TextAlign.Center
             )
             AnimatedVisibility(Calculator.hasOperator(expr)) {
-                Text("= ${Money.format(amount, reveal = true)}", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("= ${Money.format(amount, reveal = true, symbol = Currencies.get(fromCode).symbol)}", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             if (isNew && isCard && type == TxType.EXPENSE && installments > 1 && amount > 0) {
                 Text(
@@ -237,6 +281,14 @@ fun EditTransactionScreen(data: AppData, vm: MainViewModel, nav: NavHostControll
                 )
             }
             error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelLarge) }
+            if (scanning) Row(verticalAlignment = Alignment.CenterVertically) {
+                CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
+                Spacer(Modifier.width(8.dp))
+                Text("Fiş okunuyor…", style = MaterialTheme.typography.labelLarge)
+            }
+            scanResult?.let {
+                Text(it, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary, textAlign = TextAlign.Center)
+            }
         }
 
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp)) {
@@ -247,6 +299,16 @@ fun EditTransactionScreen(data: AppData, vm: MainViewModel, nav: NavHostControll
                 ChipButton(Icons.Rounded.CalendarMonth, date.dayHeader()) { showDatePicker = true }
                 if (date != today()) ChipButton(null, "Bugün") { dateEpochDay = today().toEpochDay() }
                 else ChipButton(null, "Dün") { dateEpochDay = today().minusDays(1).toEpochDay() }
+            }
+            if (crossCurrency) {
+                Spacer(Modifier.height(10.dp))
+                AmountInput(
+                    toAmountText, { toAmountText = it },
+                    "${data.accountMap[toAccountId]?.name} hesabına giren",
+                    suffix = Currencies.get(toCode).symbol,
+                    supporting = suggestedToAmount?.let { "Güncel kurla ≈ ${formatIn(it, toCode)}. Gerçek alış miktarını yazabilirsin." }
+                        ?: "Kur bilgisi yok; hedef hesaba giren miktarı yaz."
+                )
             }
             Spacer(Modifier.height(10.dp))
 

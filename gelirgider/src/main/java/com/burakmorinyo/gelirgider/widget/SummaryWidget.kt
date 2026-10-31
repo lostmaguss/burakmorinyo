@@ -32,6 +32,7 @@ import androidx.glance.unit.ColorProvider
 import com.burakmorinyo.gelirgider.GelirGiderApp
 import com.burakmorinyo.gelirgider.MainActivity
 import com.burakmorinyo.gelirgider.data.TxType
+import com.burakmorinyo.gelirgider.domain.Currencies
 import com.burakmorinyo.gelirgider.domain.Finance
 import com.burakmorinyo.gelirgider.domain.Money
 import com.burakmorinyo.gelirgider.domain.periodFor
@@ -46,10 +47,11 @@ class SummaryWidget : GlanceAppWidget() {
         val txs = app.repository.allTransactions()
         val accounts = app.repository.allAccounts()
         val period = periodFor(today(), settings.periodStartDay)
-        val inPeriod = Finance.inPeriod(txs, period)
+        val base = Currencies.codeForSymbol(settings.currency)
+        val inPeriod = Finance.toBase(Finance.inPeriod(txs, period), accounts.associateBy { it.id }, settings.rates, base)
         val expense = Finance.sum(inPeriod, TxType.EXPENSE)
         val income = Finance.sum(inPeriod, TxType.INCOME)
-        val total = Finance.balances(accounts.filter { it.includeInTotal && !it.archived }, txs).sumOf { it.balance }
+        val total = Finance.netWorth(Finance.balances(accounts, txs), settings.rates, base)
         val label = period.label(settings.periodStartDay)
         provideContent { Content(context, label, expense, income, total) }
     }

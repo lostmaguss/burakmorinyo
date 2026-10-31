@@ -33,6 +33,23 @@ Modern, internetsiz, Türkiye'ye göre düşünülmüş bir gelir-gider ve büt�
 - **Taksitli alışveriş**: 2–24 taksit, her taksit ilgili aya yazılır; gelecek taksitler ayrıca gösterilir
 - Kart ödemesi = banka hesabından karta transfer
 
+**Döviz ve altın**
+- Hesap açarken para birimi: ₺, $, €, £, CHF, **gram altın**, **çeyrek altın**
+- Canlı kurlar (Truncgil Finans; yedek: TCMB + gold-api), saatlik otomatik güncelleme, elle yenileme
+- Net varlık güncel kurla TL'ye çevrilir; ayrıca dolar ve gram altın karşılığı gösterilir
+- Farklı para birimleri arası transfer: ör. bankadan 30.000 ₺ ile 4,82 gr altın alımı (gerçek alış miktarı yazılabilir)
+- Döviz/altın hesaplarındaki harcamalar bütçe ve grafiklerde güncel kurla TL'ye çevrilir
+
+**Enflasyon karşısında**
+- Analiz ekranında geçen yılın aynı dönemine (yoksa önceki döneme) göre: nominal, **reel (TÜFE'den arındırılmış)** ve **dolar bazında** değişim
+- Giderlerde "gerçekte daha az mı harcıyorum?", gelirde "alım gücüm arttı mı?" yorumu
+- Yıllık TÜFE oranı Ayarlar'dan girilir (TÜİK her ayın 3'ünde açıklar); geçmiş dolar kuru TCMB arşivinden otomatik alınır
+
+**Fiş tarama**
+- İşlem ekranında 📷 düğmesi ya da Özet'teki "Fiş tara": fişin fotoğrafını çek veya galeriden seç
+- Telefonda, internetsiz metin tanıma (Google ML Kit); toplam tutar, tarih, mağaza ve kategori otomatik dolar
+- Migros, A101, BİM, ŞOK, Opet, Shell, Starbucks, Teknosa, LC Waikiki gibi 35+ marka tanınır; bilinmeyen mağazada fiş metninden kategori tahmin edilir, daha önce o mağazaya verdiğin kategori önceliklidir
+
 **Bütçe ve plan**
 - **Maaş gününe göre dönem** (ör. 15'inden 14'üne), takvim ayı da olur
 - Aylık toplam bütçe + kategori bütçeleri, geçmiş ortalamaya göre bütçe önerisi
@@ -59,10 +76,12 @@ Modern, internetsiz, Türkiye'ye göre düşünülmüş bir gelir-gider ve büt�
 
 Benzer uygulamalar (Wallet, Money Manager, YNAB, Cashew, Spendee) ve Türkiye'deki ihtiyaçlar incelenerek çıkarılan fikirler:
 
+Tamamlananlar: ~~fiş tarama~~, ~~canlı döviz ve altın kuru~~, ~~enflasyona göre karşılaştırma~~.
+
 1. **Banka SMS / bildirim okuma** — kart harcaması SMS'i gelince işlemi otomatik önermek
-2. **Fiş / fatura tarama (OCR)** — fotoğraftan tutar ve mağaza adını okumak
-3. **Canlı döviz ve altın kuru** — döviz/altın hesaplarını güncel TL karşılığıyla göstermek (enflasyona karşı önemli)
-4. **Enflasyona göre karşılaştırma** — "geçen yılın aynı ayına göre reel olarak daha az mı harcadım?"
+2. **Kategori bazında kişisel enflasyon** — hangi kalemde fiyatların en çok arttığını göstermek
+3. **TÜFE'nin otomatik alınması** — TCMB EVDS anahtarı girilirse oranı her ay kendiliğinden güncellemek
+4. **Fişleri saklama** — fiş fotoğrafını işleme ekleyip garanti/iade için arşivlemek
 5. **Ortak bütçe** — eş/aile ile paylaşılan hesaplar ve bulut eşitleme
 6. **Etiketler ve alt kategoriler** — "tatil 2026" gibi projeye göre harcama gruplama
 7. **Kredi ve KMH hesaplayıcı** — kalan anapara, faiz, erken kapama senaryoları

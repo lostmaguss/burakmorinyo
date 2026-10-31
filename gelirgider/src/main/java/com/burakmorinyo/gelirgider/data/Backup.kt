@@ -1,5 +1,6 @@
 package com.burakmorinyo.gelirgider.data
 
+import com.burakmorinyo.gelirgider.domain.Currencies
 import com.burakmorinyo.gelirgider.domain.Money
 import com.burakmorinyo.gelirgider.domain.toLocalDate
 import org.json.JSONArray
@@ -38,7 +39,7 @@ object Backup {
             put("id", it.id); put("name", it.name); put("type", it.type.name); put("color", it.color)
             put("icon", it.icon); put("initialBalance", it.initialBalance); put("creditLimit", it.creditLimit)
             put("statementDay", it.statementDay); put("dueDay", it.dueDay); put("includeInTotal", it.includeInTotal)
-            put("archived", it.archived); put("sortOrder", it.sortOrder)
+            put("archived", it.archived); put("sortOrder", it.sortOrder); put("currency", it.currency)
         })
         put("categories", s.categories.toJson {
             put("id", it.id); put("name", it.name); put("type", it.type.name); put("icon", it.icon)
@@ -50,6 +51,7 @@ object Backup {
             put("date", it.date); put("note", it.note); put("installmentGroup", it.installmentGroup ?: JSONObject.NULL)
             put("installmentIndex", it.installmentIndex); put("installmentCount", it.installmentCount)
             put("recurringId", it.recurringId ?: JSONObject.NULL); put("createdAt", it.createdAt)
+            put("toAmount", it.toAmount ?: JSONObject.NULL)
         })
         put("recurring", s.recurring.toJson {
             put("id", it.id); put("title", it.title); put("type", it.type.name); put("amount", it.amount)
@@ -82,7 +84,8 @@ object Backup {
             accounts = o.list("accounts") {
                 Account(getLong("id"), getString("name"), AccountType.valueOf(getString("type")), getLong("color"),
                     getString("icon"), getLong("initialBalance"), optLong("creditLimit"), optInt("statementDay"),
-                    optInt("dueDay"), optBoolean("includeInTotal", true), optBoolean("archived"), optInt("sortOrder"))
+                    optInt("dueDay"), optBoolean("includeInTotal", true), optBoolean("archived"), optInt("sortOrder"),
+                    optString("currency", "TRY"))
             },
             categories = o.list("categories") {
                 Category(getLong("id"), getString("name"), TxType.valueOf(getString("type")), getString("icon"),
@@ -92,7 +95,7 @@ object Backup {
                 Transaction(getLong("id"), TxType.valueOf(getString("type")), getLong("amount"), getLong("accountId"),
                     optLongOrNull("toAccountId"), optLongOrNull("categoryId"), getLong("date"), optString("note"),
                     optLongOrNull("installmentGroup"), optInt("installmentIndex"), optInt("installmentCount"),
-                    optLongOrNull("recurringId"), optLong("createdAt"))
+                    optLongOrNull("recurringId"), optLong("createdAt"), optLongOrNull("toAmount"))
             },
             recurring = o.list("recurring") {
                 Recurring(getLong("id"), getString("title"), TxType.valueOf(getString("type")), getLong("amount"),
@@ -118,11 +121,12 @@ object Backup {
         val acc = s.accounts.associateBy { it.id }
         val cat = s.categories.associateBy { it.id }
         fun esc(v: String) = if (v.any { it == ';' || it == '"' || it == '\n' }) "\"" + v.replace("\"", "\"\"") + "\"" else v
-        val sb = StringBuilder("﻿Tarih;Tür;Tutar;Hesap;Hedef Hesap;Kategori;Not;Taksit\n")
+        val sb = StringBuilder("﻿Tarih;Tür;Tutar;Birim;Hesap;Hedef Hesap;Kategori;Not;Taksit\n")
         s.transactions.sortedBy { it.date }.forEach { t ->
             val type = when (t.type) { TxType.EXPENSE -> "Gider"; TxType.INCOME -> "Gelir"; TxType.TRANSFER -> "Transfer" }
             val amount = Money.format(if (t.type == TxType.EXPENSE) -t.amount else t.amount, alwaysDecimals = true, symbol = "", reveal = true)
             sb.append(t.date.toLocalDate()).append(';').append(type).append(';').append(amount).append(';')
+                .append(Currencies.get(acc[t.accountId]?.currency ?: Currencies.BASE).symbol).append(';')
                 .append(esc(acc[t.accountId]?.name ?: "")).append(';')
                 .append(esc(t.toAccountId?.let { acc[it]?.name } ?: "")).append(';')
                 .append(esc(t.categoryId?.let { cat[it]?.name } ?: "")).append(';')

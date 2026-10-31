@@ -40,7 +40,9 @@ data class Account(
     val dueDay: Int = 0,
     val includeInTotal: Boolean = true,
     val archived: Boolean = false,
-    val sortOrder: Int = 0
+    val sortOrder: Int = 0,
+    /** Hesabın para birimi kodu (bkz. [com.burakmorinyo.gelirgider.domain.Currencies]); tutarlar bu birimin 1/100'ü */
+    val currency: String = "TRY"
 )
 
 @Entity(tableName = "categories")
@@ -73,7 +75,9 @@ data class Transaction(
     val installmentIndex: Int = 0,
     val installmentCount: Int = 0,
     val recurringId: Long? = null,
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    /** Farklı para birimli hesaplar arası transferde hedefe giren miktar (ör. 30.000 ₺ → 4,82 gr altın) */
+    val toAmount: Long? = null
 )
 
 @Entity(tableName = "recurring")
@@ -140,3 +144,12 @@ data class Debt(
     val remaining: Long get() = (amount - paid).coerceAtLeast(0)
     val settled: Boolean get() = paid >= amount
 }
+
+/** Günlük kur geçmişi: 1 birim = [rate] TL. Enflasyon/dolar karşılaştırmaları için. */
+@Entity(tableName = "rate_history", primaryKeys = ["day", "code"])
+data class RateRecord(
+    /** LocalDate.toEpochDay() */
+    val day: Long,
+    val code: String,
+    val rate: Double
+)

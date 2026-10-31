@@ -44,6 +44,7 @@ class GelirGiderApp : Application(), Configuration.Provider {
         appScope.launch {
             repository.ensureSeed()
             repository.processRecurring()
+            repository.refreshRates()
         }
         // İşlemler değiştikçe ana ekran widget'ı tazelenir
         appScope.launch {

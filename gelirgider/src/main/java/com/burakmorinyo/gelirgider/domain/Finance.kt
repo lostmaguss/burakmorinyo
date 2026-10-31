@@ -61,9 +61,27 @@ object Finance {
         tx.type == TxType.INCOME && tx.accountId == accountId -> tx.amount
         tx.type == TxType.EXPENSE && tx.accountId == accountId -> -tx.amount
         tx.type == TxType.TRANSFER && tx.accountId == accountId -> -tx.amount
-        tx.type == TxType.TRANSFER && tx.toAccountId == accountId -> tx.amount
+        tx.type == TxType.TRANSFER && tx.toAccountId == accountId -> tx.toAmount ?: tx.amount
         else -> 0
     }
+
+    /**
+     * İstatistik ve bütçeler için: döviz/altın hesaplarındaki gelir-giderleri güncel kurla ana para
+     * birimine çevirir. Transferler istatistiklere girmediği için olduğu gibi kalır.
+     */
+    fun toBase(txs: List<Transaction>, accounts: Map<Long, Account>, rates: Rates, baseCode: String): List<Transaction> {
+        if (accounts.values.all { it.currency == baseCode }) return txs
+        return txs.map { tx ->
+            val code = accounts[tx.accountId]?.currency ?: baseCode
+            if (code == baseCode || tx.type == TxType.TRANSFER) tx
+            else tx.copy(amount = rates.convertOrSame(tx.amount, code, baseCode))
+        }
+    }
+
+    /** Hesap bakiyelerinin ana para birimindeki toplamı (toplama dahil, arşivlenmemiş) */
+    fun netWorth(balances: List<AccountBalance>, rates: Rates, baseCode: String): Long =
+        balances.filter { it.account.includeInTotal && !it.account.archived }
+            .sumOf { rates.convertOrSame(it.balance, it.account.currency, baseCode) }
 
     fun balanceUntil(account: Account, txs: List<Transaction>, endExclusiveMillis: Long): Long =
         account.initialBalance + txs.sumOf { if (it.date < endExclusiveMillis) effect(it, account.id) else 0L }

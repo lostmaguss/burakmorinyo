@@ -51,6 +51,10 @@ android {
     buildFeatures {
         compose true
     }
+    sourceSets {
+        // Veritabanı geçiş testi (Robolectric) için şema dosyaları; release APK etkilenmez
+        debug.assets.srcDirs += files("$projectDir/schemas")
+    }
     testOptions {
         unitTests {
             includeAndroidResources = true
@@ -100,12 +104,15 @@ dependencies {
     implementation 'androidx.biometric:biometric:1.1.0'
     implementation 'androidx.glance:glance-appwidget:1.1.1'
     implementation 'androidx.glance:glance-material3:1.1.1'
+    // Fiş okuma: cihaz üzerinde metin tanıma (model Google Play Hizmetleri ile iner, APK büyümez)
+    implementation 'com.google.android.gms:play-services-mlkit-text-recognition:19.0.1'
 
     debugImplementation 'androidx.compose.ui:ui-tooling'
 
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'org.robolectric:robolectric:4.14.1'
     testImplementation 'androidx.test:core-ktx:1.6.1'
+    testImplementation 'androidx.room:room-testing:2.6.1'
     testImplementation 'io.github.takahirom.roborazzi:roborazzi:1.32.2'
     testImplementation 'io.github.takahirom.roborazzi:roborazzi-compose:1.32.2'
     testImplementation 'androidx.compose.ui:ui-test-junit4'

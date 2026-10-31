@@ -20,7 +20,12 @@ import kotlin.random.Random
 
 /** Ekran görüntüsü testleri için gerçekçi örnek veri (bugüne göre) */
 object SampleData {
-    fun build(settings: AppSettings = AppSettings(onboarded = true)): AppData {
+    val rates = com.burakmorinyo.gelirgider.domain.Rates(
+        mapOf("USD" to 49.9, "EUR" to 55.7, "GBP" to 66.9, "CHF" to 60.5, "GOLD_GRAM" to 6222.0, "GOLD_QUARTER" to 10042.0),
+        updatedAt = System.currentTimeMillis(), source = "Truncgil Finans"
+    )
+
+    fun build(settings: AppSettings = AppSettings(onboarded = true, annualInflation = 0.33, rates = rates)): AppData {
         val categories = DefaultData.categories().mapIndexed { i, c -> c.copy(id = i + 1L) }
         fun cat(name: String, type: TxType = TxType.EXPENSE) = categories.first { it.name == name && it.type == type }.id
         val accounts = listOf(
@@ -28,16 +33,20 @@ object SampleData {
             Account(2, "Ziraat Maaş", AccountType.BANK, 0xFF3B82F6, "bank", initialBalance = 2_000_000, sortOrder = 1),
             Account(3, "Bonus Kart", AccountType.CREDIT_CARD, 0xFF10B981, "credit_card", initialBalance = -320_000,
                 creditLimit = 6_000_000, statementDay = 5, dueDay = 15, sortOrder = 2),
-            Account(4, "Altın Hesabı", AccountType.INVESTMENT, 0xFFF59E0B, "diamond", initialBalance = 4_500_000, sortOrder = 3)
+            Account(4, "Altın", AccountType.INVESTMENT, 0xFFF59E0B, "diamond", initialBalance = 1_250, sortOrder = 3, currency = "GOLD_GRAM"),
+            Account(5, "Dolar Hesabı", AccountType.SAVINGS, 0xFF10B981, "exchange", initialBalance = 85_000, sortOrder = 4, currency = "USD")
         )
         val rnd = Random(42)
         val txs = mutableListOf<Transaction>()
         var id = 1L
         fun add(date: LocalDate, type: TxType, amount: Long, account: Long, category: Long?, note: String = "", to: Long? = null) {
             if (date.isAfter(today())) return
-            txs += Transaction(id++, type, amount, account, to, category, date.startMillis() + rnd.nextLong(8, 21) * 3_600_000, note)
+            // Fiyatlar her ay ~%2,4 artar (geçmiş tutarlar bugüne göre daha düşük)
+            val monthsAgo = java.time.temporal.ChronoUnit.MONTHS.between(date.withDayOfMonth(1), today().withDayOfMonth(1))
+            val scaled = if (to != null) amount else (amount / Math.pow(1.024, monthsAgo.toDouble())).toLong()
+            txs += Transaction(id++, type, scaled, account, to, category, date.startMillis() + rnd.nextLong(8, 21) * 3_600_000, note)
         }
-        val start = today().withDayOfMonth(1).minusMonths(5)
+        val start = today().withDayOfMonth(1).minusMonths(13)
         var d = start
         while (!d.isAfter(today())) {
             if (d.dayOfMonth == 1) {
@@ -61,6 +70,8 @@ object SampleData {
             if (rnd.nextInt(100) < 4) add(d, TxType.EXPENSE, 35_000 + rnd.nextLong(0, 60_000), 1, cat("Sağlık"), "Eczane")
             d = d.plusDays(1)
         }
+        // 5 gr altın alımı (farklı para birimli transfer)
+        txs += Transaction(id++, TxType.TRANSFER, 3_050_000, 2, 4, null, today().minusDays(20).startMillis() + 40_000_000, "Altın alımı", toAmount = 500)
         // Taksitli alışveriş: 3 ay önce 6 taksit telefon
         val buy = today().minusMonths(2).withDayOfMonth(10)
         val group = 777L

@@ -69,11 +69,17 @@ class ScreenshotTest {
     @Config(qualifiers = "w400dp-h2300dp-xxhdpi")
     @Test fun homeTall() = shoot("01b_home_tall") { d, vm -> HomeScreen(d, vm, rememberNavController()) }
 
+    @Config(qualifiers = "w400dp-h2600dp-xxhdpi")
+    @Test fun statsTall() = shoot("04b_stats_tall") { d, vm -> StatsScreen(d, vm, rememberNavController()) }
+
+    @Config(qualifiers = "w400dp-h1900dp-xxhdpi")
+    @Test fun accountsTall() = shoot("10b_accounts_tall") { d, vm -> AccountsScreen(d, vm, rememberNavController()) }
+
     @Test fun homeDark() = shoot("02_home_dark", dark = true) { d, vm -> HomeScreen(d, vm, rememberNavController()) }
 
     @Test fun transactions() = shoot("03_transactions") { d, vm -> TransactionsScreen(d, vm, rememberNavController(), 0, 0, true) }
 
-    @Test fun stats() = shoot("04_stats") { d, _ -> StatsScreen(d, rememberNavController()) }
+    @Test fun stats() = shoot("04_stats") { d, vm -> StatsScreen(d, vm, rememberNavController()) }
 
     @Test fun planBudget() = shoot("05_plan_budget") { d, vm -> PlanScreen(d, vm, rememberNavController()) }
 
@@ -94,9 +100,9 @@ class ScreenshotTest {
         EditTransactionScreen(d.copy(settings = d.settings.copy(lastAccountId = 3)), vm, rememberNavController(), 0, TxType.EXPENSE)
     }
 
-    @Test fun accounts() = shoot("10_accounts") { d, _ -> AccountsScreen(d, rememberNavController()) }
+    @Test fun accounts() = shoot("10_accounts") { d, vm -> AccountsScreen(d, vm, rememberNavController()) }
 
-    @Test fun statsDark() = shoot("11_stats_dark", dark = true) { d, _ -> StatsScreen(d, rememberNavController()) }
+    @Test fun statsDark() = shoot("11_stats_dark", dark = true) { d, vm -> StatsScreen(d, vm, rememberNavController()) }
 
     @Test fun onboarding() = shoot("12_onboarding") { _, _ -> OnboardingScreen {} }
 

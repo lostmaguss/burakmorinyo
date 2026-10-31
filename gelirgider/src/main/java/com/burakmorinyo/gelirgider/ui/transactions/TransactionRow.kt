@@ -58,7 +58,7 @@ fun TransactionRow(tx: Transaction, data: AppData, onClick: () -> Unit, showDate
                     Pill("${tx.installmentIndex}/${tx.installmentCount}", MaterialTheme.colorScheme.primary)
                     Spacer(Modifier.width(6.dp))
                 }
-                AmountText(tx.amount, tx.type, MaterialTheme.typography.titleSmall)
+                AmountText(tx.amount, tx.type, MaterialTheme.typography.titleSmall, currency = data.currencyOf(tx.accountId).takeIf { it != data.baseCode })
             }
         }
     )

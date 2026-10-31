@@ -13,6 +13,8 @@ import androidx.room.TypeConverter
 import androidx.room.TypeConverters
 import androidx.room.Update
 import androidx.room.Upsert
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import kotlinx.coroutines.flow.Flow
 
 class Converters {
@@ -73,9 +75,6 @@ interface TransactionDao {
 
     @Query("SELECT COUNT(*) FROM transactions WHERE date >= :from AND date < :to")
     suspend fun countBetween(from: Long, to: Long): Int
-
-    @Query("SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE type = 'EXPENSE' AND date >= :from AND date < :to AND (:categoryId IS NULL OR categoryId = :categoryId)")
-    suspend fun expenseBetween(from: Long, to: Long, categoryId: Long?): Long
 
     @Upsert suspend fun upsert(tx: Transaction): Long
     @Insert suspend fun insertAll(items: List<Transaction>): List<Long>
@@ -154,12 +153,29 @@ interface DebtDao {
     @Query("DELETE FROM debts") suspend fun clear()
 }
 
+@Dao
+interface RateDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insertAll(items: List<RateRecord>)
+
+    /** [day] gününe en yakın (öncesindeki) kayıt */
+    @Query("SELECT * FROM rate_history WHERE code = :code AND day <= :day ORDER BY day DESC LIMIT 1")
+    suspend fun onOrBefore(code: String, day: Long): RateRecord?
+}
+
+val MIGRATION_1_2 = object : Migration(1, 2) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE accounts ADD COLUMN currency TEXT NOT NULL DEFAULT 'TRY'")
+        db.execSQL("ALTER TABLE transactions ADD COLUMN toAmount INTEGER")
+        db.execSQL("CREATE TABLE IF NOT EXISTS rate_history (day INTEGER NOT NULL, code TEXT NOT NULL, rate REAL NOT NULL, PRIMARY KEY(day, code))")
+    }
+}
+
 @Database(
     entities = [
         Account::class, Category::class, Transaction::class, Recurring::class,
-        Budget::class, Goal::class, GoalDeposit::class, Debt::class
+        Budget::class, Goal::class, GoalDeposit::class, Debt::class, RateRecord::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -171,6 +187,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun budgets(): BudgetDao
     abstract fun goals(): GoalDao
     abstract fun debts(): DebtDao
+    abstract fun rates(): RateDao
 
     companion object {
         fun build(context: Context, inMemory: Boolean = false): AppDatabase {
@@ -179,7 +196,7 @@ abstract class AppDatabase : RoomDatabase() {
             } else {
                 Room.databaseBuilder(context, AppDatabase::class.java, "gelirgider.db")
             }
-            return builder.build()
+            return builder.addMigrations(MIGRATION_1_2).build()
         }
     }
 }

@@ -80,7 +80,7 @@ object Routes {
     const val STATS = "stats"
     const val PLAN = "plan"
     const val HISTORY = "history?account={account}&category={category}"
-    const val TX = "tx?id={id}&type={type}"
+    const val TX = "tx?id={id}&type={type}&scan={scan}"
     const val ACCOUNTS = "accounts"
     const val ACCOUNT = "account?id={id}"
     const val CATEGORIES = "categories"
@@ -89,7 +89,7 @@ object Routes {
     const val GOAL = "goal?id={id}"
     const val DEBT = "debt?id={id}"
 
-    fun tx(id: Long = 0, type: TxType = TxType.EXPENSE) = "tx?id=$id&type=${type.name}"
+    fun tx(id: Long = 0, type: TxType = TxType.EXPENSE, scan: Boolean = false) = "tx?id=$id&type=${type.name}&scan=$scan"
     fun history(account: Long = 0, category: Long = 0) = "history?account=$account&category=$category"
     fun account(id: Long = 0) = "account?id=$id"
     fun recurring(id: Long = 0, subscription: Boolean = false) = "recurring?id=$id&sub=$subscription"
@@ -164,23 +164,25 @@ fun AppNav(vm: MainViewModel, pendingAction: MutableState<String?>) {
             ) { e ->
                 TransactionsScreen(data, vm, nav, e.arguments!!.getLong("account"), e.arguments!!.getLong("category"), isTab = false)
             }
-            composable(Routes.STATS, enterTransition = { fadeIn() }, exitTransition = { fadeOut() }) { StatsScreen(data, nav) }
+            composable(Routes.STATS, enterTransition = { fadeIn() }, exitTransition = { fadeOut() }) { StatsScreen(data, vm, nav) }
             composable(Routes.PLAN, enterTransition = { fadeIn() }, exitTransition = { fadeOut() }) { PlanScreen(data, vm, nav) }
             composable(
                 Routes.TX,
                 arguments = listOf(
                     navArgument("id") { type = NavType.LongType; defaultValue = 0L },
-                    navArgument("type") { type = NavType.StringType; defaultValue = TxType.EXPENSE.name }
+                    navArgument("type") { type = NavType.StringType; defaultValue = TxType.EXPENSE.name },
+                    navArgument("scan") { type = NavType.BoolType; defaultValue = false }
                 ),
                 enterTransition = { slideInVertically { it / 3 } + fadeIn() },
                 popExitTransition = { slideOutVertically { it / 3 } + fadeOut() }
             ) { e ->
                 EditTransactionScreen(
                     data, vm, nav, e.arguments!!.getLong("id"),
-                    TxType.valueOf(e.arguments!!.getString("type") ?: TxType.EXPENSE.name)
+                    TxType.valueOf(e.arguments!!.getString("type") ?: TxType.EXPENSE.name),
+                    startScan = e.arguments!!.getBoolean("scan")
                 )
             }
-            composable(Routes.ACCOUNTS) { AccountsScreen(data, nav) }
+            composable(Routes.ACCOUNTS) { AccountsScreen(data, vm, nav) }
             composable(Routes.ACCOUNT, arguments = listOf(navArgument("id") { type = NavType.LongType; defaultValue = 0L })) { e ->
                 AccountEditScreen(data, vm, nav, e.arguments!!.getLong("id"))
             }

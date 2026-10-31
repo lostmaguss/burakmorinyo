@@ -99,8 +99,10 @@ fun TransactionsScreen(data: AppData, vm: MainViewModel, nav: NavHostController,
                 (q.isEmpty() || matches(tx, q, data))
         }
     }
-    val income = Finance.sum(filtered, TxType.INCOME)
-    val expense = Finance.sum(filtered, TxType.EXPENSE)
+    // Özet ana para biriminde: döviz/altın hesaplarının işlemleri güncel kurla çevrilir
+    val inBase = remember(filtered, data) { filtered.map { data.statById[it.id] ?: it } }
+    val income = Finance.sum(inBase, TxType.INCOME)
+    val expense = Finance.sum(inBase, TxType.EXPENSE)
     val grouped = remember(filtered) { filtered.groupBy { it.date.toLocalDate() }.toList() }
 
     Column(Modifier.fillMaxSize()) {
@@ -182,8 +184,8 @@ fun TransactionsScreen(data: AppData, vm: MainViewModel, nav: NavHostController,
             }
             grouped.forEach { (day, list) ->
                 item(key = "h$day") {
-                    val dayExpense = list.filter { it.type == TxType.EXPENSE }.sumOf { it.amount }
-                    val dayIncome = list.filter { it.type == TxType.INCOME }.sumOf { it.amount }
+                    val dayExpense = list.filter { it.type == TxType.EXPENSE }.sumOf { (data.statById[it.id] ?: it).amount }
+                    val dayIncome = list.filter { it.type == TxType.INCOME }.sumOf { (data.statById[it.id] ?: it).amount }
                     Row(Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 2.dp, start = 4.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text(day.dayHeader(), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
                         if (dayIncome > 0) Text("+${Money.format(dayIncome)}  ", style = MaterialTheme.typography.labelMedium, color = LocalFinanceColors.current.income)

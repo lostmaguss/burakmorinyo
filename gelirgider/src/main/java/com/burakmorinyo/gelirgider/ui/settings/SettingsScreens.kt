@@ -151,9 +151,43 @@ fun SettingsScreen(data: AppData, vm: MainViewModel, nav: NavHostController) {
                     FormLabel("Para birimi")
                     Spacer(Modifier.height(6.dp))
                     Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf("₺", "$", "€", "£", "₼", "zł").forEach { c ->
+                        listOf("₺", "$", "€", "£", "CHF").forEach { c ->
                             FilterChip(s.currency == c, { vm.updateSettings { it.copy(currency = c) } }, label = { Text(c) })
                         }
+                    }
+                }
+            }
+            item { SectionHeader("Enflasyon ve kurlar") }
+            item {
+                var text by remember(s.annualInflation) {
+                    mutableStateOf(s.annualInflation?.let { java.math.BigDecimal(it * 100).setScale(2, java.math.RoundingMode.HALF_UP).stripTrailingZeros().toPlainString().replace('.', ',') } ?: "")
+                }
+                AppCard {
+                    FormLabel("Yıllık enflasyon (TÜFE)")
+                    Text(
+                        "TÜİK her ayın 3'ünde açıklar. Girersen Analiz ekranında harcama ve gelirlerin enflasyondan arındırılmış (reel) değişimini gösteririm.",
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    androidx.compose.material3.OutlinedTextField(
+                        value = text,
+                        onValueChange = { t ->
+                            text = t.filter { it.isDigit() || it == ',' || it == '.' }.take(6)
+                            vm.updateSettings { it.copy(annualInflation = text.replace(',', '.').toDoubleOrNull()?.takeIf { v -> v in 0.0..1000.0 }?.div(100)) }
+                        },
+                        label = { Text("Yıllık oran") }, prefix = { Text("%") }, singleLine = true,
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal),
+                        modifier = Modifier.fillMaxWidth(), shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            if (s.rates.updatedAt == 0L) "Döviz ve altın kurları henüz alınmadı"
+                            else "Kurlar: ${s.rates.source}, ${java.time.Instant.ofEpochMilli(s.rates.updatedAt).atZone(java.time.ZoneId.systemDefault())
+                                .format(java.time.format.DateTimeFormatter.ofPattern("d MMM HH:mm", com.burakmorinyo.gelirgider.domain.trLocale))}",
+                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f)
+                        )
+                        TextButton(onClick = { vm.refreshRates() }) { Text("Yenile") }
                     }
                 }
             }

@@ -1,7 +1,10 @@
 package com.burakmorinyo.gelirgider.data
 
 import androidx.room.withTransaction
+import com.burakmorinyo.gelirgider.domain.Currencies
+import com.burakmorinyo.gelirgider.domain.Finance
 import com.burakmorinyo.gelirgider.domain.Money
+import com.burakmorinyo.gelirgider.domain.Rates
 import com.burakmorinyo.gelirgider.domain.nextOccurrence
 import com.burakmorinyo.gelirgider.domain.periodFor
 import com.burakmorinyo.gelirgider.domain.splitInstallments
@@ -89,10 +92,16 @@ class Repository(
         val period = periodFor(tx.date.toLocalDate(), s.periodStartDay)
         if (today() !in period) return
         val cats = db.categories().all().associateBy { it.id }
+        // Döviz/altın hesaplarındaki giderler güncel kurla ana para birimine çevrilir
+        val accounts = db.accounts().all().associateBy { it.id }
+        val baseCode = Currencies.codeForSymbol(s.currency)
+        val periodExpenses = Finance.toBase(
+            db.transactions().all().filter { it.type == TxType.EXPENSE && it.date in period }, accounts, s.rates, baseCode
+        )
         for (b in db.budgets().all()) {
             if (b.categoryId != null && b.categoryId != tx.categoryId) continue
             if (b.amount <= 0) continue
-            val spent = db.transactions().expenseBetween(period.startMillis, period.endMillis, b.categoryId)
+            val spent = periodExpenses.filter { b.categoryId == null || it.categoryId == b.categoryId }.sumOf { it.amount }
             val ratio = spent.toDouble() / b.amount
             val level = when { ratio >= 1.0 -> 100; ratio >= 0.8 -> 80; else -> continue }
             val name = b.categoryId?.let { cats[it]?.name } ?: "Aylık toplam"
@@ -103,6 +112,29 @@ class Repository(
             else alerts.budgetAlert(key, "$name bütçesinin %80'i doldu",
                 "Kalan: ${Money.format(b.amount - spent)}. Dönem sonuna kadar dikkatli ol.")
         }
+    }
+
+    // ---------- Kurlar ----------
+
+    /** Kurlar [maxAgeMs]'den eskiyse internetten günceller. Başarısızsa eski kurlar kalır. */
+    suspend fun refreshRates(maxAgeMs: Long = 60 * 60 * 1000L): Result<Rates> {
+        val store = settings ?: return Result.failure(IllegalStateException("ayar yok"))
+        val current = store.current().rates
+        if (!current.isEmpty && System.currentTimeMillis() - current.updatedAt < maxAgeMs) return Result.success(current)
+        return runCatching { RatesService.fetch() }.onSuccess { r ->
+            store.update { it.copy(rates = r) }
+            val day = today().toEpochDay()
+            db.rates().insertAll(r.values.map { (code, rate) -> RateRecord(day, code, rate) })
+        }
+    }
+
+    /** Geçmiş bir günün dolar kuru: önce yerel geçmişe, yoksa TCMB arşivine bakar */
+    suspend fun usdRateOn(date: LocalDate): Double? {
+        val day = date.toEpochDay()
+        db.rates().onOrBefore("USD", day)?.takeIf { day - it.day <= 7 }?.let { return it.rate }
+        val (d, rate) = RatesService.historicalUsd(date) ?: return null
+        db.rates().insertAll(listOf(RateRecord(d.toEpochDay(), "USD", rate)))
+        return rate
     }
 
     // ---------- Hesaplar ----------

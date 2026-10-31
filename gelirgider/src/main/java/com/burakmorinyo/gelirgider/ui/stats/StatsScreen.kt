@@ -50,6 +50,7 @@ import com.burakmorinyo.gelirgider.domain.today
 import com.burakmorinyo.gelirgider.domain.startMillis
 import com.burakmorinyo.gelirgider.domain.toLocalDate
 import com.burakmorinyo.gelirgider.ui.AppData
+import com.burakmorinyo.gelirgider.ui.MainViewModel
 import com.burakmorinyo.gelirgider.ui.Routes
 import com.burakmorinyo.gelirgider.ui.components.AppCard
 import com.burakmorinyo.gelirgider.ui.components.BarGroup
@@ -73,7 +74,7 @@ private val weekdayShort = listOf("Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Pa
 private val weekdayLong = listOf("Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar")
 
 @Composable
-fun StatsScreen(data: AppData, nav: NavHostController) {
+fun StatsScreen(data: AppData, vm: MainViewModel, nav: NavHostController) {
     var offset by rememberSaveable { mutableIntStateOf(0) }
     var type by rememberSaveable { mutableStateOf(TxType.EXPENSE) }
     val startDay = data.settings.periodStartDay
@@ -81,7 +82,7 @@ fun StatsScreen(data: AppData, nav: NavHostController) {
     val fc = LocalFinanceColors.current
 
     val m = remember(data, offset, type) {
-        val txs = Finance.inPeriod(data.transactions, period)
+        val txs = Finance.inPeriod(data.statTransactions, period)
         val totals = Finance.categoryTotals(txs, type, data.categoryMap)
         val history = (5 downTo 0).map { k ->
             var p = period
@@ -89,16 +90,18 @@ fun StatsScreen(data: AppData, nav: NavHostController) {
             p
         }
         val bars = history.map { p ->
-            val t = Finance.inPeriod(data.transactions, p)
+            val t = Finance.inPeriod(data.statTransactions, p)
             BarGroup(monthName(p.start.plusDays(14).monthValue, short = true), listOf(Finance.sum(t, TxType.INCOME), Finance.sum(t, TxType.EXPENSE)))
         }
         val netWorth = history.map { p ->
-            data.accounts.filter { it.includeInTotal }.sumOf { a -> Finance.balanceUntil(a, data.transactions, p.endMillis.coerceAtMost(today().plusDays(1).startMillis())) }
+            data.accounts.filter { it.includeInTotal }.sumOf { a ->
+                data.toBase(Finance.balanceUntil(a, data.transactions, p.endMillis.coerceAtMost(today().plusDays(1).startMillis())), a.currency)
+            }
         }
         // Son 12 haftanın hafta günlerine göre ortalama harcaması
         val since = today().minusWeeks(12)
         val weekday = LongArray(7)
-        data.transactions.filter { it.type == TxType.EXPENSE }.forEach {
+        data.statTransactions.filter { it.type == TxType.EXPENSE }.forEach {
             val d = it.date.toLocalDate()
             if (!d.isBefore(since) && !d.isAfter(today())) weekday[d.dayOfWeek.value - 1] += it.amount
         }
@@ -184,6 +187,7 @@ fun StatsScreen(data: AppData, nav: NavHostController) {
                 Metric("Net", Money.format(m.income - m.expense, signed = true), Modifier.weight(1f))
             }
         }
+        item { InflationCard(data, vm, nav, period, offset == 0, type) }
         item { SectionHeader("Son 6 dönem") }
         item {
             AppCard {
@@ -292,5 +296,95 @@ private fun Legend(label: String, color: Color) {
         Box(Modifier.size(10.dp).clip(CircleShape).background(color))
         Spacer(Modifier.width(6.dp))
         Text(label, style = MaterialTheme.typography.labelMedium)
+    }
+}
+
+private data class Comparison(val label: String, val current: Long, val previous: Long, val inflation: Double?, val previousDate: java.time.LocalDate)
+
+/**
+ * Enflasyon karşısında: geçen yılın aynı dönemiyle (yoksa önceki dönemle) nominal, reel (TÜFE'ye göre)
+ * ve dolar bazında karşılaştırma.
+ */
+@Composable
+private fun InflationCard(data: AppData, vm: MainViewModel, nav: NavHostController, period: com.burakmorinyo.gelirgider.domain.Period, isCurrent: Boolean, type: TxType) {
+    val startDay = data.settings.periodStartDay
+    val annual = data.settings.annualInflation
+    val fc = LocalFinanceColors.current
+    val c = remember(data, period, type) {
+        val elapsed = if (isCurrent) period.elapsedDays() else period.days
+        fun total(p: com.burakmorinyo.gelirgider.domain.Period): Long {
+            val end = p.start.plusDays(elapsed.toLong().coerceAtMost(p.days.toLong())).startMillis()
+            return data.statTransactions.filter { it.type == type && it.date >= p.startMillis && it.date < end }.sumOf { it.amount }
+        }
+        val current = total(period)
+        val lastYear = com.burakmorinyo.gelirgider.domain.periodFor(period.start.minusYears(1), startDay)
+        val ly = total(lastYear)
+        if (ly > 0) Comparison("Geçen yılın aynı dönemine göre", current, ly, annual, lastYear.start.plusDays(14))
+        else {
+            val prev = period.previous(startDay)
+            Comparison("Geçen döneme göre", current, total(prev),
+                annual?.let { com.burakmorinyo.gelirgider.domain.Inflation.monthlyFromAnnual(it) }, prev.start.plusDays(14))
+        }
+    }
+    // Dolar bazlı karşılaştırma için o günün kuru (TCMB arşivi)
+    var usdThen by remember(c.previousDate) { mutableStateOf<Double?>(null) }
+    androidx.compose.runtime.LaunchedEffect(c.previousDate) { usdThen = vm.usdRateOn(c.previousDate) }
+    val usdNow = data.rates.tryPer("USD")?.takeIf { data.baseCode == "TRY" }
+    val isExpense = type == TxType.EXPENSE
+    val word = if (isExpense) "harcama" else "gelir"
+
+    AppCard {
+        Text("Enflasyon karşısında", style = MaterialTheme.typography.titleMedium)
+        Text(c.label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.height(10.dp))
+        if (c.previous <= 0 || c.current <= 0) {
+            Text("Karşılaştırmak için önceki dönemlerde de $word kaydı gerekiyor.", style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+            return@AppCard
+        }
+        val nominal = com.burakmorinyo.gelirgider.domain.Inflation.nominalChange(c.current, c.previous)!!
+        val real = c.inflation?.let { com.burakmorinyo.gelirgider.domain.Inflation.realChange(c.current, c.previous, it) }
+        val fx = if (usdNow != null && usdThen != null) com.burakmorinyo.gelirgider.domain.Inflation.fxChange(c.current, usdNow, c.previous, usdThen!!) else null
+        // Giderde artış kötü, gelirde artış iyi
+        fun tone(v: Double) = if ((v > 0) == isExpense) fc.expense else fc.income
+        fun pct(v: Double) = (if (v > 0) "+" else "−") + "%" + kotlin.math.abs(v * 100).roundToInt()
+
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            ChangeCell("Nominal", pct(nominal), MaterialTheme.colorScheme.onSurface, Modifier.weight(1f))
+            ChangeCell("Reel (TÜFE)", real?.let(::pct) ?: "—", real?.let(::tone) ?: MaterialTheme.colorScheme.onSurfaceVariant, Modifier.weight(1f))
+            ChangeCell("Dolar bazında", fx?.let(::pct) ?: "—", fx?.let(::tone) ?: MaterialTheme.colorScheme.onSurfaceVariant, Modifier.weight(1f))
+        }
+        Spacer(Modifier.height(10.dp))
+        Text(
+            "Önceki: ${Money.format(c.previous)} → şimdi: ${Money.format(c.current)}",
+            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        if (real != null) {
+            val msg = when {
+                isExpense && real < -0.02 -> "Enflasyondan arındırınca gerçekte %${(-real * 100).roundToInt()} daha az harcamışsın. Tasarruf ediyorsun 👏"
+                isExpense && real > 0.02 -> "Fiyat artışlarının ötesinde, gerçekten %${(real * 100).roundToInt()} daha fazla harcıyorsun."
+                !isExpense && real < -0.02 -> "Gelirin enflasyonun gerisinde kaldı: alım gücün %${(-real * 100).roundToInt()} azaldı."
+                !isExpense && real > 0.02 -> "Gelirin enflasyonu %${(real * 100).roundToInt()} geçti, alım gücün arttı."
+                else -> "Enflasyondan arındırınca $word düzeyin hemen hemen aynı."
+            }
+            Spacer(Modifier.height(4.dp))
+            Text(msg, style = MaterialTheme.typography.bodyMedium)
+        } else {
+            Spacer(Modifier.height(4.dp))
+            androidx.compose.material3.TextButton(onClick = { nav.navigate(com.burakmorinyo.gelirgider.ui.Routes.SETTINGS) },
+                contentPadding = PaddingValues(0.dp)) {
+                Text("Reel değişimi görmek için Ayarlar'dan yıllık enflasyon oranını gir →")
+            }
+        }
+    }
+}
+
+@Composable
+private fun ChangeCell(label: String, value: String, color: Color, modifier: Modifier) {
+    Column(
+        modifier.clip(MaterialTheme.shapes.medium).background(MaterialTheme.colorScheme.surfaceContainerHigh).padding(10.dp)
+    ) {
+        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+        Text(value, style = MaterialTheme.typography.titleMedium.merge(AmountStyle), color = color, maxLines = 1)
     }
 }

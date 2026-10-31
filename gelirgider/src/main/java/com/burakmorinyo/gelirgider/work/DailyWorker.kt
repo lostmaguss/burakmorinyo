@@ -35,6 +35,7 @@ class DailyWorker(context: Context, params: WorkerParameters) : CoroutineWorker(
         val today = today()
 
         repo.processRecurring(today)
+        repo.refreshRates()
 
         if (settings.paymentReminders) {
             for (r in repo.allRecurring()) {

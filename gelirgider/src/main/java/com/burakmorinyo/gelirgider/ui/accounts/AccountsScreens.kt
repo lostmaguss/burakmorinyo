@@ -1,5 +1,6 @@
 package com.burakmorinyo.gelirgider.ui.accounts
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -17,6 +18,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -32,6 +34,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
@@ -39,7 +42,9 @@ import com.burakmorinyo.gelirgider.data.Account
 import com.burakmorinyo.gelirgider.data.AccountType
 import com.burakmorinyo.gelirgider.data.DefaultData
 import com.burakmorinyo.gelirgider.domain.AccountBalance
+import com.burakmorinyo.gelirgider.domain.Currencies
 import com.burakmorinyo.gelirgider.domain.Money
+import com.burakmorinyo.gelirgider.domain.formatIn
 import com.burakmorinyo.gelirgider.domain.relativeDays
 import com.burakmorinyo.gelirgider.domain.short
 import com.burakmorinyo.gelirgider.ui.AppData
@@ -63,11 +68,12 @@ import com.burakmorinyo.gelirgider.ui.theme.AmountStyle
 import com.burakmorinyo.gelirgider.ui.theme.LocalFinanceColors
 
 @Composable
-fun AccountsScreen(data: AppData, nav: NavHostController) {
+fun AccountsScreen(data: AppData, vm: MainViewModel, nav: NavHostController) {
     val fc = LocalFinanceColors.current
     val active = data.balances.filter { !it.account.archived }
-    val assets = active.filter { it.account.includeInTotal && it.balance > 0 }.sumOf { it.balance }
-    val debts = active.filter { it.account.includeInTotal && it.balance < 0 }.sumOf { -it.balance }
+    val inBase = { b: AccountBalance -> data.toBase(b.balance, b.account.currency) }
+    val assets = active.filter { it.account.includeInTotal && it.balance > 0 }.sumOf(inBase)
+    val debts = active.filter { it.account.includeInTotal && it.balance < 0 }.sumOf { -inBase(it) }
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth().statusBarsPadding().padding(4.dp), verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = { nav.popBackStack() }) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Geri") }
@@ -82,6 +88,9 @@ fun AccountsScreen(data: AppData, nav: NavHostController) {
                 AppCard {
                     Text("Net varlık", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(Money.format(data.netWorth), style = MaterialTheme.typography.headlineMedium.merge(AmountStyle))
+                    netWorthEquivalents(data)?.let {
+                        Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                     Spacer(Modifier.height(8.dp))
                     Row {
                         Column(Modifier.weight(1f)) {
@@ -95,17 +104,18 @@ fun AccountsScreen(data: AppData, nav: NavHostController) {
                     }
                 }
             }
+            item { RatesCard(data, vm) }
             AccountType.entries.forEach { type ->
                 val list = active.filter { it.account.type == type }
                 if (list.isNotEmpty()) {
                     item { SectionHeader(type.label) }
-                    list.forEach { b -> item(key = b.account.id) { AccountCard(b, onOpen = { nav.navigate(Routes.history(account = b.account.id)) }, onEdit = { nav.navigate(Routes.account(b.account.id)) }) } }
+                    list.forEach { b -> item(key = b.account.id) { AccountCard(b, data, onOpen = { nav.navigate(Routes.history(account = b.account.id)) }, onEdit = { nav.navigate(Routes.account(b.account.id)) }) } }
                 }
             }
             val archived = data.balances.filter { it.account.archived }
             if (archived.isNotEmpty()) {
                 item { SectionHeader("Arşiv") }
-                archived.forEach { b -> item(key = b.account.id) { AccountCard(b, onOpen = { nav.navigate(Routes.history(account = b.account.id)) }, onEdit = { nav.navigate(Routes.account(b.account.id)) }) } }
+                archived.forEach { b -> item(key = b.account.id) { AccountCard(b, data, onOpen = { nav.navigate(Routes.history(account = b.account.id)) }, onEdit = { nav.navigate(Routes.account(b.account.id)) }) } }
             }
             item {
                 FilledTonalButton(onClick = { nav.navigate(Routes.account()) }, Modifier.fillMaxWidth()) {
@@ -117,7 +127,7 @@ fun AccountsScreen(data: AppData, nav: NavHostController) {
 }
 
 @Composable
-private fun AccountCard(b: AccountBalance, onOpen: () -> Unit, onEdit: () -> Unit) {
+private fun AccountCard(b: AccountBalance, data: AppData, onOpen: () -> Unit, onEdit: () -> Unit) {
     val a = b.account
     val fc = LocalFinanceColors.current
     AppCard(onClick = onOpen) {
@@ -129,10 +139,17 @@ private fun AccountCard(b: AccountBalance, onOpen: () -> Unit, onEdit: () -> Uni
                     Text(a.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
                     if (!a.includeInTotal) { Spacer(Modifier.width(6.dp)); Pill("toplama dahil değil", MaterialTheme.colorScheme.onSurfaceVariant) }
                 }
-                Text(a.type.label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                val foreign = a.currency != data.baseCode
+                Text(if (foreign) "${a.type.label} · ${Currencies.get(a.currency).name}" else a.type.label,
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Column(horizontalAlignment = Alignment.End) {
-                AmountText(b.balance, style = MaterialTheme.typography.titleMedium, color = if (b.balance < 0) fc.expense else null)
+                AmountText(b.balance, style = MaterialTheme.typography.titleMedium, color = if (b.balance < 0) fc.expense else null,
+                    currency = a.currency)
+                if (a.currency != data.baseCode && data.rates.tryPer(a.currency) != null) Text(
+                    "≈ ${Money.format(data.toBase(b.balance, a.currency))}", style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
                 androidx.compose.material3.TextButton(onClick = onEdit, contentPadding = PaddingValues(0.dp), modifier = Modifier.height(28.dp)) { Text("Düzenle") }
             }
         }
@@ -195,6 +212,9 @@ fun AccountEditScreen(data: AppData, vm: MainViewModel, nav: NavHostController, 
     var icon by rememberSaveable { mutableStateOf(existing?.icon ?: "bank") }
     var include by rememberSaveable { mutableStateOf(existing?.includeInTotal ?: true) }
     var archived by rememberSaveable { mutableStateOf(existing?.archived ?: false) }
+    var currency by rememberSaveable { mutableStateOf(existing?.currency ?: data.baseCode) }
+    // İşlemi olan hesabın para birimi değiştirilemez (geçmiş tutarlar anlamsızlaşır)
+    val currencyLocked = existing != null && data.transactions.any { it.accountId == existing.id || it.toAccountId == existing.id }
     var error by remember { mutableStateOf<String?>(null) }
 
     FormScreen(
@@ -220,6 +240,7 @@ fun AccountEditScreen(data: AppData, vm: MainViewModel, nav: NavHostController, 
                     statementDay = if (type == AccountType.CREDIT_CARD) sd else 0,
                     dueDay = if (type == AccountType.CREDIT_CARD) dd else 0,
                     includeInTotal = include, archived = archived,
+                    currency = if (type == AccountType.CREDIT_CARD) data.baseCode else currency,
                     sortOrder = existing?.sortOrder ?: data.accounts.size
                 )
             )
@@ -233,6 +254,24 @@ fun AccountEditScreen(data: AppData, vm: MainViewModel, nav: NavHostController, 
             }
         }
         TextInput(name, { name = it }, "Hesap adı", supporting = if (type == AccountType.CREDIT_CARD) "Ör. Bonus Kart, Maximum, World" else null)
+        if (type != AccountType.CREDIT_CARD) {
+            FormLabel("Para birimi")
+            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Currencies.all.forEach { c ->
+                    FilterChip(
+                        currency == c.code, enabled = !currencyLocked || currency == c.code,
+                        onClick = {
+                            currency = c.code
+                            if (existing == null && Currencies.isGold(c.code)) { icon = "diamond"; color = 0xFFF59E0B }
+                            else if (existing == null && c.code != data.baseCode) icon = "exchange"
+                        },
+                        label = { Text(c.name) }
+                    )
+                }
+            }
+            if (currencyLocked) Text("İşlemi olan hesabın para birimi değiştirilemez.", style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
         if (type == AccountType.CREDIT_CARD) {
             AmountInput(initial, { initial = it }, "Mevcut kart borcu",
                 supporting = "Kartın bugünkü toplam borcunu yaz (taksitler dahil); eksi bakiye olarak kaydedilir")
@@ -252,7 +291,17 @@ fun AccountEditScreen(data: AppData, vm: MainViewModel, nav: NavHostController, 
             Text("Kredi kartı ödemesini, banka hesabından bu karta “Transfer” olarak gir.", style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         } else {
-            AmountInput(initial, { initial = it }, "Başlangıç bakiyesi", supporting = "Hesabın bugünkü bakiyesi")
+            AmountInput(
+                initial, { initial = it },
+                if (Currencies.isGold(currency)) "Elindeki miktar" else "Başlangıç bakiyesi",
+                suffix = Currencies.get(currency).symbol,
+                supporting = when {
+                    currency == "GOLD_GRAM" -> "Kaç gram altının var? (ör. 12,5)"
+                    currency == "GOLD_QUARTER" -> "Kaç çeyrek altının var?"
+                    currency != data.baseCode -> "Hesaptaki ${Currencies.get(currency).name} miktarı"
+                    else -> "Hesabın bugünkü bakiyesi"
+                }
+            )
         }
         FormLabel("Renk")
         ColorPicker(color, DefaultData.palette) { color = it }
@@ -261,5 +310,51 @@ fun AccountEditScreen(data: AppData, vm: MainViewModel, nav: NavHostController, 
         SwitchRow("Toplam varlığa dahil et", "Kapatırsan bu hesap net varlık hesabına katılmaz", include) { include = it }
         if (existing != null) SwitchRow("Arşivle", "Hesap gizlenir ama işlemleri korunur", archived) { archived = it }
         error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+    }
+}
+
+/** "≈ 2.250 $ · 18,2 gr altın" — kur yoksa null */
+fun netWorthEquivalents(data: AppData): String? {
+    val parts = listOfNotNull(
+        data.rates.convert(data.netWorth, data.baseCode, "USD")?.takeIf { data.baseCode != "USD" }?.let { formatIn(it, "USD") },
+        data.rates.convert(data.netWorth, data.baseCode, "GOLD_GRAM")?.let { "${formatIn(it, "GOLD_GRAM")} altın" }
+    )
+    return if (parts.isEmpty()) null else "≈ " + parts.joinToString(" · ")
+}
+
+@Composable
+private fun RatesCard(data: AppData, vm: MainViewModel) {
+    val r = data.rates
+    AppCard {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("Güncel kurlar", style = MaterialTheme.typography.titleSmall)
+                Text(
+                    if (r.updatedAt == 0L) "Henüz alınmadı — internet gerekli"
+                    else "${r.source} · ${java.time.Instant.ofEpochMilli(r.updatedAt).atZone(java.time.ZoneId.systemDefault())
+                        .format(java.time.format.DateTimeFormatter.ofPattern("d MMM HH:mm", com.burakmorinyo.gelirgider.domain.trLocale))}",
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            androidx.compose.material3.IconButton(onClick = { vm.refreshRates() }) {
+                Icon(Icons.Rounded.Refresh, "Kurları yenile", tint = MaterialTheme.colorScheme.primary)
+            }
+        }
+        if (!r.isEmpty) {
+            Spacer(Modifier.height(8.dp))
+            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Currencies.all.filter { it.code != data.baseCode }.forEach { c ->
+                    val v = r.convert(100, c.code, data.baseCode) ?: return@forEach
+                    Column(
+                        Modifier.clip(MaterialTheme.shapes.medium).background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                            .padding(horizontal = 12.dp, vertical = 8.dp)
+                    ) {
+                        Text(if (c.code.startsWith("GOLD")) c.name else c.code, style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(Money.format(v, alwaysDecimals = v < 100_00, reveal = true), style = MaterialTheme.typography.titleSmall)
+                    }
+                }
+            }
+        }
     }
 }

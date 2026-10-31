@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.burakmorinyo.gelirgider.domain.Rates
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -28,7 +29,10 @@ data class AppSettings(
     val budgetAlerts: Boolean = true,
     val paymentReminders: Boolean = true,
     val onboarded: Boolean = false,
-    val lastAccountId: Long = 0
+    val lastAccountId: Long = 0,
+    /** Kullanıcının girdiği yıllık TÜFE (ör. 0.33 = %33); null = girilmedi */
+    val annualInflation: Double? = null,
+    val rates: Rates = Rates()
 )
 
 private val Context.dataStore by preferencesDataStore("settings")
@@ -48,6 +52,10 @@ class SettingsStore(private val context: Context) {
         val onboarded = booleanPreferencesKey("onboarded")
         val lastAccount = longPreferencesKey("last_account")
         val notified = stringSetPreferencesKey("notified")
+        val inflation = stringPreferencesKey("inflation")
+        val rates = stringPreferencesKey("rates")
+        val ratesAt = longPreferencesKey("rates_at")
+        val ratesSource = stringPreferencesKey("rates_source")
     }
 
     val flow: Flow<AppSettings> = context.dataStore.data.map { p -> p.toSettings() }
@@ -66,8 +74,15 @@ class SettingsStore(private val context: Context) {
         budgetAlerts = this[K.budgetAlerts] ?: true,
         paymentReminders = this[K.paymentReminders] ?: true,
         onboarded = this[K.onboarded] ?: false,
-        lastAccountId = this[K.lastAccount] ?: 0
+        lastAccountId = this[K.lastAccount] ?: 0,
+        annualInflation = this[K.inflation]?.toDoubleOrNull(),
+        rates = Rates(decodeRates(this[K.rates]), this[K.ratesAt] ?: 0, this[K.ratesSource] ?: "")
     )
+
+    private fun decodeRates(s: String?): Map<String, Double> = s?.split(';')?.mapNotNull { e ->
+        val (k, v) = e.split('=').takeIf { it.size == 2 } ?: return@mapNotNull null
+        v.toDoubleOrNull()?.let { k to it }
+    }?.toMap() ?: emptyMap()
 
     suspend fun update(transform: (AppSettings) -> AppSettings) {
         context.dataStore.edit { p ->
@@ -84,6 +99,10 @@ class SettingsStore(private val context: Context) {
             p[K.paymentReminders] = s.paymentReminders
             p[K.onboarded] = s.onboarded
             p[K.lastAccount] = s.lastAccountId
+            if (s.annualInflation != null) p[K.inflation] = s.annualInflation.toString() else p.remove(K.inflation)
+            p[K.rates] = s.rates.values.entries.joinToString(";") { "${it.key}=${it.value}" }
+            p[K.ratesAt] = s.rates.updatedAt
+            p[K.ratesSource] = s.rates.source
         }
     }
 

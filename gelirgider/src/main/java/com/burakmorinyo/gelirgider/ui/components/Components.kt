@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.burakmorinyo.gelirgider.data.TxType
 import com.burakmorinyo.gelirgider.domain.Money
+import com.burakmorinyo.gelirgider.domain.formatIn
 import com.burakmorinyo.gelirgider.ui.theme.AmountStyle
 import com.burakmorinyo.gelirgider.ui.theme.LocalFinanceColors
 
@@ -100,12 +101,15 @@ fun AmountText(
     type: TxType? = null,
     style: TextStyle = MaterialTheme.typography.titleMedium,
     color: Color? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** Hesabın para birimi kodu; verilmezse ana para birimi */
+    currency: String? = null
 ) {
+    val body = if (currency == null) Money.format(amount) else formatIn(amount, currency)
     val text = when (type) {
-        TxType.EXPENSE -> "−" + Money.format(amount)
-        TxType.INCOME -> "+" + Money.format(amount)
-        else -> Money.format(amount)
+        TxType.EXPENSE -> "−$body"
+        TxType.INCOME -> "+$body"
+        else -> body
     }
     Text(
         text, modifier = modifier, maxLines = 1,
