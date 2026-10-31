@@ -58,5 +58,18 @@ object ReceiptScanner {
         return rows.joinToString("\n") { r -> r.sortedBy { it.left }.joinToString(" ") { it.text } }
     }
 
-    suspend fun scan(context: Context, uri: Uri): ReceiptInfo = ReceiptParser.parse(recognize(context, uri))
+    /** Okur ve çözümler; hata olursa kullanıcıya gösterilecek açıklamayla döner */
+    suspend fun scan(context: Context, uri: Uri): Result<ReceiptInfo> = runCatching {
+        val text = recognize(context, uri)
+        if (text.isBlank()) error("Fotoğrafta yazı bulunamadı. Fişi düz, aydınlık bir yerde ve yakından çek.")
+        ReceiptParser.parse(text)
+    }.recoverCatching { e ->
+        throw IllegalStateException(
+            when {
+                e is IllegalStateException && e.message != null -> e.message!!
+                e is java.io.IOException -> "Fotoğraf açılamadı: ${e.message}"
+                else -> "Metin tanıma çalışmadı: ${e.javaClass.simpleName}${e.message?.let { " — $it" } ?: ""}"
+            }, e
+        )
+    }
 }

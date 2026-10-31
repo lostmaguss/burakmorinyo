@@ -24,10 +24,10 @@ import kotlinx.coroutines.launch
 
 /**
  * Fişi fotoğraftan okur: kamerayla çek ya da galeriden seç. Okuma cihaz üzerinde yapılır.
- * [onResult] okunamazsa null alır.
+ * [onResult] okunamazsa sebebiyle birlikte hata alır.
  */
 @Composable
-fun ReceiptScanMenu(expanded: Boolean, onDismiss: () -> Unit, onStart: () -> Unit, onResult: (ReceiptInfo?) -> Unit) {
+fun ReceiptScanMenu(expanded: Boolean, onDismiss: () -> Unit, onStart: () -> Unit, onResult: (Result<ReceiptInfo>) -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var photoUri by rememberSaveable { mutableStateOf<String?>(null) }
@@ -35,7 +35,7 @@ fun ReceiptScanMenu(expanded: Boolean, onDismiss: () -> Unit, onStart: () -> Uni
     fun process(uri: Uri) {
         onStart()
         scope.launch {
-            onResult(runCatching { ReceiptScanner.scan(context, uri) }.getOrNull()?.takeIf { it.total != null || it.merchant != null })
+            onResult(ReceiptScanner.scan(context, uri))
         }
     }
 
@@ -55,7 +55,7 @@ fun ReceiptScanMenu(expanded: Boolean, onDismiss: () -> Unit, onStart: () -> Uni
                 onDismiss()
                 val uri = ReceiptScanner.newPhotoUri(context)
                 photoUri = uri.toString()
-                runCatching { camera.launch(uri) }.onFailure { onResult(null) }
+                runCatching { camera.launch(uri) }.onFailure { onResult(Result.failure(IllegalStateException("Kamera uygulaması açılamadı."))) }
             }
         )
         DropdownMenuItem(

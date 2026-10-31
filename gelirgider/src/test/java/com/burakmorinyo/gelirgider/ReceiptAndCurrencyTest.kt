@@ -94,6 +94,16 @@ class ReceiptParserTest {
         assertEquals(45000L, ReceiptParser.parse(text, today).total)
     }
 
+    @Test fun toleratesOcrSpacingAndListsAllAmounts() {
+        // OCR virgülün etrafına boşluk koyabilir; toplam bulunamazsa bile tutarlar seçilebilsin
+        val r = ReceiptParser.parse("KAFE\nÇAY 25 ,00\nTOST 120, 00\nTOPLAM 145 , 00", today)
+        assertEquals(14500L, r.total)
+        assertEquals(listOf(14500L, 12000L, 2500L), r.amounts)
+        val noTotal = ReceiptParser.parse("Bir şeyler\n12,50\n7,25", today)
+        assertEquals(listOf(1250L, 725L), noTotal.amounts)
+        assertEquals("Bir şeyler\n12,50\n7,25", noTotal.rawText)
+    }
+
     @Test fun rejectsFutureDates() {
         assertNull(ReceiptParser.parse("TARİH 15.12.2027\nTOPLAM 10,00", today).date)
     }

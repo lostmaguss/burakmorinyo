@@ -8,8 +8,14 @@ data class ReceiptInfo(
     val date: LocalDate?,
     val merchant: String?,
     /** Varsayılan kategori adlarından biri (ör. "Market"); eşleşme yoksa null */
-    val categoryName: String?
-)
+    val categoryName: String?,
+    /** Fişte bulunan tüm tutarlar (büyükten küçüğe, tekrarsız): toplam yanlışsa kullanıcı seçebilsin */
+    val amounts: List<Long> = emptyList(),
+    /** OCR'ın okuduğu ham metin */
+    val rawText: String = ""
+) {
+    val isEmpty get() = total == null && merchant == null && date == null
+}
 
 /**
  * Türkiye'deki yazar kasa fişlerinin metninden (OCR çıktısı) toplam tutar, tarih, mağaza ve
@@ -70,7 +76,7 @@ object ReceiptParser {
     )
 
     /** "1.234,56", "1234,56", "1 234,56", "1234.56" (OCR bazen nokta okur) */
-    private val amountRegex = Regex("""(?<![\d.,])(\*?)\s?(\d{1,3}(?:[. ]\d{3})+|\d+)[,.](\d{2})(?![\d])""")
+    private val amountRegex = Regex("""(?<![\d.,])(\*?)\s?(\d{1,3}(?:[. ]\d{3})+|\d+) ?[,.] ?(\d{2})(?![\d])""")
     private val dateRegex = Regex("""(?<!\d)(\d{1,2})[./-](\d{1,2})[./-](\d{4}|\d{2})(?!\d)""")
 
     private val totalKeys = listOf(
@@ -95,7 +101,10 @@ object ReceiptParser {
 
     fun parse(text: String, today: LocalDate = LocalDate.now()): ReceiptInfo {
         val lines = text.lines().map { it.trim() }.filter { it.isNotEmpty() }
-        return ReceiptInfo(findTotal(lines), findDate(lines, today), findMerchant(lines, text), findCategory(text))
+        val amounts = lines.filter { dateRegex.find(it) == null }
+            .flatMap { l -> amountRegex.findAll(l).mapNotNull { toKurus(it) }.toList() }
+            .filter { it > 0 }.distinct().sortedDescending().take(12)
+        return ReceiptInfo(findTotal(lines), findDate(lines, today), findMerchant(lines, text), findCategory(text), amounts, text)
     }
 
     private fun findTotal(lines: List<String>): Long? {

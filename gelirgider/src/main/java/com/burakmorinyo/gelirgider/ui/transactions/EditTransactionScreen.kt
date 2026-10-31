@@ -91,6 +91,7 @@ import com.burakmorinyo.gelirgider.data.Recurring
 import com.burakmorinyo.gelirgider.data.Transaction
 import com.burakmorinyo.gelirgider.data.TxType
 import com.burakmorinyo.gelirgider.domain.Calculator
+import com.burakmorinyo.gelirgider.domain.ReceiptInfo
 import com.burakmorinyo.gelirgider.domain.CardStatements
 import com.burakmorinyo.gelirgider.domain.withDayClamped
 import com.burakmorinyo.gelirgider.domain.Currencies
@@ -152,6 +153,24 @@ fun EditTransactionScreen(
     var scanMenu by remember { mutableStateOf(startScan) }
     var scanning by remember { mutableStateOf(false) }
     var scanResult by remember { mutableStateOf<String?>(null) }
+    var pendingReceipt by remember { mutableStateOf<ReceiptInfo?>(null) }
+    var scanError by remember { mutableStateOf<String?>(null) }
+
+    fun applyReceipt(info: ReceiptInfo, total: Long?) {
+        type = TxType.EXPENSE
+        total?.let { expr = Money.toInput(it) }
+        info.date?.let { dateEpochDay = it.toEpochDay() }
+        info.merchant?.let { note = it }
+        // Kategori: önce bu mağazaya daha önce verdiğin kategori, sonra fişten tahmin
+        val learned = info.merchant?.let { m ->
+            data.transactions.filter { it.note.equals(m, ignoreCase = true) && it.categoryId != null }
+                .groupingBy { it.categoryId!! }.eachCount().maxByOrNull { it.value }?.key
+        }
+        val guessed = info.categoryName?.let { n -> data.categoriesOf(TxType.EXPENSE).firstOrNull { it.name == n }?.id }
+        (learned ?: guessed)?.let { categoryId = it }
+        error = null
+        scanResult = "Fişten dolduruldu — kategori ve hesabı kontrol edip kaydet."
+    }
 
     val date = LocalDate.ofEpochDay(dateEpochDay)
     val color by animateColorAsState(typeColor(type), label = "type")
@@ -249,25 +268,9 @@ fun EditTransactionScreen(
                     expanded = scanMenu,
                     onDismiss = { scanMenu = false },
                     onStart = { scanning = true; scanResult = null },
-                    onResult = { info ->
+                    onResult = { result ->
                         scanning = false
-                        if (info == null) { scanResult = "Fiş okunamadı. Daha aydınlık bir yerde, fişi düz tutarak tekrar dene."; return@ReceiptScanMenu }
-                        type = TxType.EXPENSE
-                        info.total?.let { expr = Money.toInput(it) }
-                        info.date?.let { dateEpochDay = it.toEpochDay() }
-                        info.merchant?.let { note = it }
-                        // Kategori: önce bu mağazaya daha önce verdiğin kategori, sonra fişten tahmin
-                        val learned = info.merchant?.let { m ->
-                            data.transactions.filter { it.note.equals(m, ignoreCase = true) && it.categoryId != null }
-                                .groupingBy { it.categoryId!! }.eachCount().maxByOrNull { it.value }?.key
-                        }
-                        val guessed = info.categoryName?.let { n -> data.categoriesOf(TxType.EXPENSE).firstOrNull { it.name == n }?.id }
-                        (learned ?: guessed)?.let { categoryId = it }
-                        error = null
-                        scanResult = listOfNotNull(
-                            info.total?.let { "Toplam ${Money.format(it, reveal = true)}" } ?: "Toplam bulunamadı",
-                            info.merchant, info.date?.dayHeader()
-                        ).joinToString(" · ") + " — kontrol edip kaydet."
+                        result.onSuccess { pendingReceipt = it }.onFailure { scanError = it.message ?: "Fiş okunamadı." }
                     }
                 )
             }
@@ -439,6 +442,19 @@ fun EditTransactionScreen(
         ) {
             Text(if (isNew) "Kaydet" else "Güncelle", style = MaterialTheme.typography.titleMedium)
         }
+    }
+
+    pendingReceipt?.let { info ->
+        ReceiptReviewDialog(info, onDismiss = { pendingReceipt = null }) { total -> applyReceipt(info, total); pendingReceipt = null }
+    }
+    scanError?.let { msg ->
+        AlertDialog(
+            onDismissRequest = { scanError = null },
+            title = { Text("Fiş okunamadı") },
+            text = { Text(msg) },
+            confirmButton = { TextButton(onClick = { scanError = null; scanMenu = true }) { Text("Tekrar dene") } },
+            dismissButton = { TextButton(onClick = { scanError = null }) { Text("Kapat") } }
+        )
     }
 
     if (showDatePicker) {
