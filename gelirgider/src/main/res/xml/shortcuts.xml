@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut android:shortcutId="add_expense" android:enabled="true"
+        android:icon="@drawable/ic_shortcut_expense"
+        android:shortcutShortLabel="@string/shortcut_expense">
+        <intent android:action="com.burakmorinyo.gelirgider.ADD_EXPENSE"
+            android:targetPackage="com.burakmorinyo.gelirgider"
+            android:targetClass="com.burakmorinyo.gelirgider.MainActivity" />
+    </shortcut>
+    <shortcut android:shortcutId="add_income" android:enabled="true"
+        android:icon="@drawable/ic_shortcut_income"
+        android:shortcutShortLabel="@string/shortcut_income">
+        <intent android:action="com.burakmorinyo.gelirgider.ADD_INCOME"
+            android:targetPackage="com.burakmorinyo.gelirgider"
+            android:targetClass="com.burakmorinyo.gelirgider.MainActivity" />
+    </shortcut>
+</shortcuts>

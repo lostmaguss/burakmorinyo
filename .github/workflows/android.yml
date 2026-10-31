@@ -2,6 +2,9 @@ name: Android APK
 
 on:
   push:
+    paths-ignore:
+      - 'gelirgider/**'
+      - '.github/workflows/gelirgider.yml'
   workflow_dispatch:
 
 permissions:

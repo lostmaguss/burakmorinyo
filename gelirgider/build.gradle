@@ -1,0 +1,122 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+    id 'org.jetbrains.kotlin.plugin.compose'
+    id 'com.google.devtools.ksp'
+}
+
+// Sürüm numaraları GitHub Actions'tan gelir (-PversionCode=.. -PversionName=..)
+def appVersionCode = (project.findProperty('versionCode') ?: '1') as int
+def appVersionName = (project.findProperty('versionName') ?: '1.0.0') as String
+
+android {
+    namespace 'com.burakmorinyo.gelirgider'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.burakmorinyo.gelirgider'
+        minSdk 26
+        targetSdk 35
+        versionCode appVersionCode
+        versionName appVersionName
+        // Metin tanıma modelinin yerel kütüphaneleri sadece telefon işlemcileri için paketlenir (APK küçük kalır)
+        ndk { abiFilters 'arm64-v8a', 'armeabi-v7a' }
+    }
+
+    signingConfigs {
+        release {
+            // Splendor sayacıyla aynı anahtar: hep aynı imza, güncellemeler üzerine kurulur
+            def ksPath = System.getenv('SIGNING_KEYSTORE_PATH')
+            storeFile ksPath ? file(ksPath) : rootProject.file('app/release.keystore')
+            storePassword System.getenv('SIGNING_STORE_PASSWORD') ?: 'splendor123'
+            keyAlias System.getenv('SIGNING_KEY_ALIAS') ?: 'sayac'
+            keyPassword System.getenv('SIGNING_KEY_PASSWORD') ?: 'splendor123'
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+    buildFeatures {
+        compose true
+    }
+    sourceSets {
+        // Veritabanı geçiş testi (Robolectric) için şema dosyaları; release APK etkilenmez
+        debug.assets.srcDirs += files("$projectDir/schemas")
+    }
+    testOptions {
+        unitTests {
+            includeAndroidResources = true
+            all {
+                systemProperty 'roborazzi.test.record', 'true'
+                // Maven Central'a erişimi kısıtlı ortamlarda Robolectric için ayna
+                def repo = System.getenv('ROBOLECTRIC_REPO_URL')
+                if (repo) systemProperty 'robolectric.dependency.repo.url', repo
+                maxHeapSize = '2g'
+            }
+        }
+    }
+    lint {
+        checkReleaseBuilds false
+        abortOnError false
+    }
+}
+
+ksp {
+    arg('room.schemaLocation', "$projectDir/schemas")
+}
+
+dependencies {
+    def composeBom = platform('androidx.compose:compose-bom:2024.12.01')
+    implementation composeBom
+    implementation 'androidx.compose.ui:ui'
+    implementation 'androidx.compose.ui:ui-graphics'
+    implementation 'androidx.compose.ui:ui-tooling-preview'
+    implementation 'androidx.compose.material3:material3'
+    implementation 'androidx.compose.material:material-icons-extended'
+    implementation 'androidx.compose.animation:animation'
+
+    implementation 'androidx.core:core-ktx:1.15.0'
+    implementation 'androidx.activity:activity-compose:1.9.3'
+    implementation 'androidx.fragment:fragment-ktx:1.8.5'
+    implementation 'androidx.lifecycle:lifecycle-runtime-compose:2.8.7'
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7'
+    implementation 'androidx.lifecycle:lifecycle-process:2.8.7'
+    implementation 'androidx.navigation:navigation-compose:2.8.5'
+
+    implementation 'androidx.room:room-runtime:2.6.1'
+    implementation 'androidx.room:room-ktx:2.6.1'
+    ksp 'androidx.room:room-compiler:2.6.1'
+
+    implementation 'androidx.datastore:datastore-preferences:1.1.1'
+    implementation 'androidx.work:work-runtime-ktx:2.10.0'
+    implementation 'androidx.biometric:biometric:1.1.0'
+    implementation 'androidx.glance:glance-appwidget:1.1.1'
+    implementation 'androidx.glance:glance-material3:1.1.1'
+    // Fiş okuma: cihaz üzerinde metin tanıma; model APK'nın içinde (indirme beklemez, internetsiz çalışır)
+    implementation 'com.google.mlkit:text-recognition:16.0.1'
+
+    debugImplementation 'androidx.compose.ui:ui-tooling'
+
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.robolectric:robolectric:4.14.1'
+    testImplementation 'androidx.test:core-ktx:1.6.1'
+    testImplementation 'androidx.room:room-testing:2.6.1'
+    testImplementation 'io.github.takahirom.roborazzi:roborazzi:1.32.2'
+    testImplementation 'io.github.takahirom.roborazzi:roborazzi-compose:1.32.2'
+    testImplementation 'androidx.compose.ui:ui-test-junit4'
+    debugImplementation 'androidx.compose.ui:ui-test-manifest'
+}
