@@ -42,7 +42,11 @@ data class Account(
     val archived: Boolean = false,
     val sortOrder: Int = 0,
     /** Hesabın para birimi kodu (bkz. [com.burakmorinyo.gelirgider.domain.Currencies]); tutarlar bu birimin 1/100'ü */
-    val currency: String = "TRY"
+    val currency: String = "TRY",
+    /** Kredi kartı: her hesap dönemi için harcama hedefi (kuruş), 0 = yok */
+    val cycleBudget: Long = 0,
+    /** Kredi kartı: son ödeme tarihi geçen ekstreler ödenmiş sayılır (her ödemeyi girmek gerekmez) */
+    val assumePaid: Boolean = true
 )
 
 @Entity(tableName = "categories")

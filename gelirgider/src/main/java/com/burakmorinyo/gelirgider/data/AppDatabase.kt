@@ -170,12 +170,28 @@ val MIGRATION_1_2 = object : Migration(1, 2) {
     }
 }
 
+val MIGRATION_2_3 = object : Migration(2, 3) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE accounts ADD COLUMN cycleBudget INTEGER NOT NULL DEFAULT 0")
+        db.execSQL("ALTER TABLE accounts ADD COLUMN assumePaid INTEGER NOT NULL DEFAULT 1")
+        // Kart borcu artık ekstrelerden hesaplanıyor: eski "mevcut kart borcu" bugünkü döneme bir harcama olarak taşınır
+        db.execSQL(
+            """INSERT INTO transactions (type, amount, accountId, toAccountId, categoryId, date, note, installmentGroup,
+               installmentIndex, installmentCount, recurringId, createdAt, toAmount)
+               SELECT 'EXPENSE', -initialBalance, id, NULL, NULL, strftime('%s','now') * 1000, 'Devreden kart borcu', NULL,
+               0, 0, NULL, strftime('%s','now') * 1000, NULL
+               FROM accounts WHERE type = 'CREDIT_CARD' AND initialBalance < 0"""
+        )
+        db.execSQL("UPDATE accounts SET initialBalance = 0 WHERE type = 'CREDIT_CARD'")
+    }
+}
+
 @Database(
     entities = [
         Account::class, Category::class, Transaction::class, Recurring::class,
         Budget::class, Goal::class, GoalDeposit::class, Debt::class, RateRecord::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -196,7 +212,7 @@ abstract class AppDatabase : RoomDatabase() {
             } else {
                 Room.databaseBuilder(context, AppDatabase::class.java, "gelirgider.db")
             }
-            return builder.addMigrations(MIGRATION_1_2).build()
+            return builder.addMigrations(MIGRATION_1_2, MIGRATION_2_3).build()
         }
     }
 }

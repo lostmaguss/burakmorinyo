@@ -33,6 +33,15 @@ Modern, internetsiz, Türkiye'ye göre düşünülmüş bir gelir-gider ve büt�
 - **Taksitli alışveriş**: 2–24 taksit, her taksit ilgili aya yazılır; gelecek taksitler ayrıca gösterilir
 - Kart ödemesi = banka hesabından karta transfer
 
+**Kredi kartı ekstreleri**
+- Her kart için ayrı sayfa (Kırmızı Kart, Mavi Kart… istediğin renkte): kart görseli, güncel borç, kesim ve son ödeme günü
+- Ay ay ekstreler: hangi harcama ve taksit dilimi hangi ekstreye yazıldı, ödenen/kalan, gelecek aylara yansıyacak taksitler
+- **Geçmiş ekstreler ödenmiş sayılır**: Mart'ta başlamış taksiti girdiğinde geçmiş ayları tek tek işaretlemen gerekmez (kart ayarından kapatılabilir)
+- Taksit girişinde toplam ya da aylık taksit tutarı; taksit planları (ör. 7/10, kalan tutar, son taksit ayı)
+- **Borcu güncelle**: bankadaki dönem içi harcamayı yaz, fark tek kayıtla eşitlenir
+- **Dönem harcama hedefi**: kesime kadar günde ne kadar harcayabileceğini gösterir
+- Ekstreyi "Öde" ile bankadan karta ödeme kaydı
+
 **Döviz ve altın**
 - Hesap açarken para birimi: ₺, $, €, £, CHF, **gram altın**, **çeyrek altın**
 - Canlı kurlar (Truncgil Finans; yedek: TCMB + gold-api), saatlik otomatik güncelleme, elle yenileme
@@ -69,7 +78,7 @@ Modern, internetsiz, Türkiye'ye göre düşünülmüş bir gelir-gider ve büt�
 
 **Gizlilik ve veri**
 - Parmak izi / yüz / ekran kilidi ile uygulama kilidi, "tutarları gizle" modu
-- JSON yedek al / geri yükle (Drive'a kaydedilebilir), Excel için CSV dışa aktarma, Android otomatik yedeği
+- JSON yedek al / geri yükle (Drive'a kaydedilebilir), **silmeden içe aktar** (başka bir yedeği veya taksit listesini mevcut verilere ekler), Excel için CSV dışa aktarma, Android otomatik yedeği
 - Açık / koyu tema, Material You renkleri, ₺ $ € £ para birimleri
 
 ### Yol haritası — sırada ne olabilir?

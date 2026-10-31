@@ -61,6 +61,7 @@ import com.burakmorinyo.gelirgider.domain.short
 import com.burakmorinyo.gelirgider.domain.toLocalDate
 import com.burakmorinyo.gelirgider.domain.today
 import com.burakmorinyo.gelirgider.ui.AppData
+import com.burakmorinyo.gelirgider.ui.accounts.accountRoute
 import com.burakmorinyo.gelirgider.ui.accounts.netWorthEquivalents
 import com.burakmorinyo.gelirgider.ui.MainViewModel
 import com.burakmorinyo.gelirgider.ui.Routes
@@ -171,7 +172,7 @@ fun HomeScreen(data: AppData, vm: MainViewModel, nav: NavHostController) {
         item {
             LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 items(data.balances.filter { !it.account.archived }) { b ->
-                    AccountChip(b, data) { nav.navigate(Routes.history(account = b.account.id)) }
+                    AccountChip(b, data) { nav.navigate(accountRoute(b.account)) }
                 }
                 item {
                     AppCard(Modifier.width(120.dp).height(118.dp), onClick = { nav.navigate(Routes.account()) }) {

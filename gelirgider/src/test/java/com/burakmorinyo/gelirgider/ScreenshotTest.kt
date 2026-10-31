@@ -75,6 +75,16 @@ class ScreenshotTest {
     @Config(qualifiers = "w400dp-h1900dp-xxhdpi")
     @Test fun accountsTall() = shoot("10b_accounts_tall") { d, vm -> AccountsScreen(d, vm, rememberNavController()) }
 
+    @Config(qualifiers = "w400dp-h2400dp-xxhdpi")
+    @Test fun redCard() = shoot("14_card_red") { d, vm -> com.burakmorinyo.gelirgider.ui.accounts.CardDetailScreen(d, vm, rememberNavController(), 3) }
+
+    @Config(qualifiers = "w400dp-h2400dp-xxhdpi")
+    @Test fun blueCard() = shoot("15_card_blue") { d, vm -> com.burakmorinyo.gelirgider.ui.accounts.CardDetailScreen(d, vm, rememberNavController(), 6) }
+
+    @Test fun addInstallment() = shoot("16_add_installment") { d, vm ->
+        EditTransactionScreen(d, vm, rememberNavController(), 0, TxType.EXPENSE, presetAccount = 6, installmentMode = true)
+    }
+
     @Test fun homeDark() = shoot("02_home_dark", dark = true) { d, vm -> HomeScreen(d, vm, rememberNavController()) }
 
     @Test fun transactions() = shoot("03_transactions") { d, vm -> TransactionsScreen(d, vm, rememberNavController(), 0, 0, true) }

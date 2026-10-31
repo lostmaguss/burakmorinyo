@@ -90,6 +90,15 @@ fun SettingsScreen(data: AppData, vm: MainViewModel, nav: NavHostController) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var pendingRestore by remember { mutableStateOf<String?>(null) }
+    val mergeJson = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) scope.launch {
+            runCatching {
+                val text = withContext(Dispatchers.IO) { context.contentResolver.openInputStream(uri)!!.use { it.readBytes().decodeToString() } }
+                vm.mergeJson(text)
+            }.onSuccess { vm.message("$it işlem eklendi") }
+                .onFailure { vm.message(it.message ?: "Dosya içe aktarılamadı") }
+        }
+    }
     var day by remember(s.periodStartDay) { mutableFloatStateOf(s.periodStartDay.toFloat()) }
 
     val exportJson = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
@@ -219,6 +228,9 @@ fun SettingsScreen(data: AppData, vm: MainViewModel, nav: NavHostController) {
                     NavRow(Icons.Rounded.Category, "Kategoriler", "Ekle, düzenle, renk ve ikon seç") { nav.navigate(Routes.CATEGORIES) }
                     NavRow(Icons.Rounded.CloudUpload, "Yedek al", "Tüm verileri tek bir dosyaya kaydet (Drive'a da kaydedebilirsin)") {
                         exportJson.launch("gelirgider-yedek-${LocalDate.now()}.json")
+                    }
+                    NavRow(Icons.Rounded.CloudDownload, "İçe aktar (silmeden ekle)", "Taksit listesi veya başka bir yedekteki kayıtları mevcut verilerine ekle") {
+                        mergeJson.launch(arrayOf("application/json", "application/octet-stream", "text/plain"))
                     }
                     NavRow(Icons.Rounded.CloudDownload, "Yedekten geri yükle", "Mevcut verilerin yerine yedektekiler gelir") {
                         importJson.launch(arrayOf("application/json", "application/octet-stream", "text/plain"))

@@ -40,6 +40,7 @@ object Backup {
             put("icon", it.icon); put("initialBalance", it.initialBalance); put("creditLimit", it.creditLimit)
             put("statementDay", it.statementDay); put("dueDay", it.dueDay); put("includeInTotal", it.includeInTotal)
             put("archived", it.archived); put("sortOrder", it.sortOrder); put("currency", it.currency)
+            put("cycleBudget", it.cycleBudget); put("assumePaid", it.assumePaid)
         })
         put("categories", s.categories.toJson {
             put("id", it.id); put("name", it.name); put("type", it.type.name); put("icon", it.icon)
@@ -85,7 +86,7 @@ object Backup {
                 Account(getLong("id"), getString("name"), AccountType.valueOf(getString("type")), getLong("color"),
                     getString("icon"), getLong("initialBalance"), optLong("creditLimit"), optInt("statementDay"),
                     optInt("dueDay"), optBoolean("includeInTotal", true), optBoolean("archived"), optInt("sortOrder"),
-                    optString("currency", "TRY"))
+                    optString("currency", "TRY"), optLong("cycleBudget"), optBoolean("assumePaid", true))
             },
             categories = o.list("categories") {
                 Category(getLong("id"), getString("name"), TxType.valueOf(getString("type")), getString("icon"),

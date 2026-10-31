@@ -91,6 +91,8 @@ import com.burakmorinyo.gelirgider.data.Recurring
 import com.burakmorinyo.gelirgider.data.Transaction
 import com.burakmorinyo.gelirgider.data.TxType
 import com.burakmorinyo.gelirgider.domain.Calculator
+import com.burakmorinyo.gelirgider.domain.CardStatements
+import com.burakmorinyo.gelirgider.domain.withDayClamped
 import com.burakmorinyo.gelirgider.domain.Currencies
 import com.burakmorinyo.gelirgider.domain.formatIn
 import com.burakmorinyo.gelirgider.domain.Money
@@ -116,11 +118,15 @@ import java.time.ZoneOffset
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
-fun EditTransactionScreen(data: AppData, vm: MainViewModel, nav: NavHostController, id: Long, initialType: TxType, startScan: Boolean = false) {
+fun EditTransactionScreen(
+    data: AppData, vm: MainViewModel, nav: NavHostController, id: Long, initialType: TxType,
+    startScan: Boolean = false, presetAccount: Long = 0, installmentMode: Boolean = false
+) {
     val existing = remember(id, data.loaded) { if (id != 0L) data.transactions.firstOrNull { it.id == id } else null }
     if (id != 0L && existing == null) return
 
-    val defaultAccount = data.activeAccounts.firstOrNull { it.id == data.settings.lastAccountId }?.id
+    val defaultAccount = presetAccount.takeIf { p -> data.activeAccounts.any { it.id == p } }
+        ?: data.activeAccounts.firstOrNull { it.id == data.settings.lastAccountId }?.id
         ?: data.activeAccounts.firstOrNull()?.id ?: 0L
 
     var type by rememberSaveable { mutableStateOf(existing?.type ?: initialType) }
@@ -132,7 +138,9 @@ fun EditTransactionScreen(data: AppData, vm: MainViewModel, nav: NavHostControll
     var categoryId by rememberSaveable { mutableLongStateOf(existing?.categoryId ?: 0L) }
     var dateEpochDay by rememberSaveable { mutableLongStateOf((existing?.date?.toLocalDate() ?: today()).toEpochDay()) }
     var note by rememberSaveable { mutableStateOf(existing?.note ?: "") }
-    var installments by rememberSaveable { mutableIntStateOf(1) }
+    var installments by rememberSaveable { mutableIntStateOf(if (installmentMode) 3 else 1) }
+    // Taksitte tutar aylık taksit olarak mı girildi (toplam = aylık × taksit sayısı)
+    var perInstallment by rememberSaveable { mutableStateOf(false) }
     var repeat by rememberSaveable { mutableStateOf(false) }
     var repeatFreq by rememberSaveable { mutableStateOf(Frequency.MONTHLY) }
     var noteFocused by remember { mutableStateOf(false) }
@@ -147,10 +155,12 @@ fun EditTransactionScreen(data: AppData, vm: MainViewModel, nav: NavHostControll
 
     val date = LocalDate.ofEpochDay(dateEpochDay)
     val color by animateColorAsState(typeColor(type), label = "type")
-    val amount = Calculator.evaluate(expr) ?: 0L
+    val enteredAmount = Calculator.evaluate(expr) ?: 0L
     val account = data.accountMap[accountId]
     val isCard = account?.type == AccountType.CREDIT_CARD
     val isNew = existing == null
+    val installmentApplies = isNew && isCard && type == TxType.EXPENSE
+    val amount = if (installmentApplies && perInstallment && installments > 1) enteredAmount * installments else enteredAmount
     val fromCode = data.currencyOf(accountId)
     val toCode = data.currencyOf(toAccountId)
     val crossCurrency = type == TxType.TRANSFER && toAccountId != 0L && fromCode != toCode
@@ -272,11 +282,12 @@ fun EditTransactionScreen(data: AppData, vm: MainViewModel, nav: NavHostControll
                 color = color, maxLines = 1, textAlign = TextAlign.Center
             )
             AnimatedVisibility(Calculator.hasOperator(expr)) {
-                Text("= ${Money.format(amount, reveal = true, symbol = Currencies.get(fromCode).symbol)}", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("= ${Money.format(enteredAmount, reveal = true, symbol = Currencies.get(fromCode).symbol)}", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            if (isNew && isCard && type == TxType.EXPENSE && installments > 1 && amount > 0) {
+            if (installmentApplies && installments > 1 && amount > 0) {
                 Text(
-                    "$installments × ${Money.format(splitInstallments(amount, installments).last(), reveal = true)}",
+                    if (perInstallment) "$installments × ${Money.format(enteredAmount, reveal = true)} = toplam ${Money.format(amount, reveal = true)}"
+                    else "$installments × ${Money.format(splitInstallments(amount, installments).last(), reveal = true)}",
                     style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary
                 )
             }
@@ -338,6 +349,38 @@ fun EditTransactionScreen(data: AppData, vm: MainViewModel, nav: NavHostControll
                 }
             }
 
+            if (isNew && isCard && type == TxType.EXPENSE) {
+                Spacer(Modifier.height(14.dp))
+                Text("Taksit", style = MaterialTheme.typography.titleSmall)
+                Spacer(Modifier.height(6.dp))
+                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    listOf(1, 2, 3, 4, 5, 6, 8, 9, 10, 12, 15, 18, 24, 36).forEach { n ->
+                        FilterChip(selected = installments == n, onClick = { installments = n },
+                            label = { Text(if (n == 1) "Tek çekim" else "$n ay") })
+                    }
+                }
+                if (installments > 1) {
+                    Row(Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        FilterChip(!perInstallment, { perInstallment = false }, label = { Text("Toplam tutarı yazdım") })
+                        FilterChip(perInstallment, { perInstallment = true }, label = { Text("Aylık taksiti yazdım") })
+                    }
+                    val acc = account
+                    val billed = if (acc != null && acc.statementDay in 1..31) {
+                        val open = CardStatements.closingFor(today(), acc.statementDay)
+                        (0 until installments).count { k ->
+                            CardStatements.closingFor(date.plusMonths(k.toLong()).withDayClamped(date.dayOfMonth), acc.statementDay).isBefore(open)
+                        }
+                    } else 0
+                    Text(
+                        if (billed > 0) "Alışveriş ${date.dayHeader()} tarihinde: $billed taksit geçmiş ekstrelere yazılır" +
+                            (if (acc?.assumePaid != false) " ve ödenmiş sayılır" else "") + ", ${installments - billed} taksit kaldı."
+                        else "Her ay ${account?.name} ekstresine bir taksit düşer. Geçmişte başlayan taksit için alışveriş tarihini seç.",
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+            }
+
             if (type != TxType.TRANSFER) {
                 Spacer(Modifier.height(14.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -345,23 +388,6 @@ fun EditTransactionScreen(data: AppData, vm: MainViewModel, nav: NavHostControll
                     TextButton(onClick = { nav.navigate(Routes.CATEGORIES) }) { Text("Düzenle") }
                 }
                 CategoryGrid(categories, categoryId) { categoryId = it; error = null; focus.clearFocus() }
-            }
-
-            if (isNew && isCard && type == TxType.EXPENSE) {
-                Spacer(Modifier.height(14.dp))
-                Text("Taksit", style = MaterialTheme.typography.titleSmall)
-                Spacer(Modifier.height(6.dp))
-                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    listOf(1, 2, 3, 4, 6, 9, 12, 18, 24).forEach { n ->
-                        FilterChip(selected = installments == n, onClick = { installments = n },
-                            label = { Text(if (n == 1) "Tek çekim" else "$n ay") })
-                    }
-                }
-                if (installments > 1) Text(
-                    "Her ay ${account?.name} hesabına bir taksit düşer; bütçe ve grafiklerde ilgili aya yazılır.",
-                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 4.dp)
-                )
             }
 
             if (existing?.installmentCount?.let { it > 1 } == true) {

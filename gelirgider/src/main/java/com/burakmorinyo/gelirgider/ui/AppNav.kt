@@ -63,6 +63,7 @@ import androidx.navigation.navArgument
 import com.burakmorinyo.gelirgider.data.TxType
 import com.burakmorinyo.gelirgider.ui.accounts.AccountEditScreen
 import com.burakmorinyo.gelirgider.ui.accounts.AccountsScreen
+import com.burakmorinyo.gelirgider.ui.accounts.CardDetailScreen
 import com.burakmorinyo.gelirgider.ui.home.HomeScreen
 import com.burakmorinyo.gelirgider.ui.plan.DebtEditScreen
 import com.burakmorinyo.gelirgider.ui.plan.GoalEditScreen
@@ -80,7 +81,8 @@ object Routes {
     const val STATS = "stats"
     const val PLAN = "plan"
     const val HISTORY = "history?account={account}&category={category}"
-    const val TX = "tx?id={id}&type={type}&scan={scan}"
+    const val TX = "tx?id={id}&type={type}&scan={scan}&account={account}&inst={inst}"
+    const val CARD = "card/{id}"
     const val ACCOUNTS = "accounts"
     const val ACCOUNT = "account?id={id}"
     const val CATEGORIES = "categories"
@@ -89,7 +91,9 @@ object Routes {
     const val GOAL = "goal?id={id}"
     const val DEBT = "debt?id={id}"
 
-    fun tx(id: Long = 0, type: TxType = TxType.EXPENSE, scan: Boolean = false) = "tx?id=$id&type=${type.name}&scan=$scan"
+    fun tx(id: Long = 0, type: TxType = TxType.EXPENSE, scan: Boolean = false, account: Long = 0, installment: Boolean = false) =
+        "tx?id=$id&type=${type.name}&scan=$scan&account=$account&inst=$installment"
+    fun card(id: Long) = "card/$id"
     fun history(account: Long = 0, category: Long = 0) = "history?account=$account&category=$category"
     fun account(id: Long = 0) = "account?id=$id"
     fun recurring(id: Long = 0, subscription: Boolean = false) = "recurring?id=$id&sub=$subscription"
@@ -171,7 +175,9 @@ fun AppNav(vm: MainViewModel, pendingAction: MutableState<String?>) {
                 arguments = listOf(
                     navArgument("id") { type = NavType.LongType; defaultValue = 0L },
                     navArgument("type") { type = NavType.StringType; defaultValue = TxType.EXPENSE.name },
-                    navArgument("scan") { type = NavType.BoolType; defaultValue = false }
+                    navArgument("scan") { type = NavType.BoolType; defaultValue = false },
+                    navArgument("account") { type = NavType.LongType; defaultValue = 0L },
+                    navArgument("inst") { type = NavType.BoolType; defaultValue = false }
                 ),
                 enterTransition = { slideInVertically { it / 3 } + fadeIn() },
                 popExitTransition = { slideOutVertically { it / 3 } + fadeOut() }
@@ -179,12 +185,17 @@ fun AppNav(vm: MainViewModel, pendingAction: MutableState<String?>) {
                 EditTransactionScreen(
                     data, vm, nav, e.arguments!!.getLong("id"),
                     TxType.valueOf(e.arguments!!.getString("type") ?: TxType.EXPENSE.name),
-                    startScan = e.arguments!!.getBoolean("scan")
+                    startScan = e.arguments!!.getBoolean("scan"),
+                    presetAccount = e.arguments!!.getLong("account"),
+                    installmentMode = e.arguments!!.getBoolean("inst")
                 )
             }
             composable(Routes.ACCOUNTS) { AccountsScreen(data, vm, nav) }
             composable(Routes.ACCOUNT, arguments = listOf(navArgument("id") { type = NavType.LongType; defaultValue = 0L })) { e ->
                 AccountEditScreen(data, vm, nav, e.arguments!!.getLong("id"))
+            }
+            composable(Routes.CARD, arguments = listOf(navArgument("id") { type = NavType.LongType })) { e ->
+                CardDetailScreen(data, vm, nav, e.arguments!!.getLong("id"))
             }
             composable(Routes.CATEGORIES) { CategoriesScreen(data, vm, nav) }
             composable(Routes.SETTINGS) { SettingsScreen(data, vm, nav) }

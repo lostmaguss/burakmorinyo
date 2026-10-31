@@ -106,15 +106,16 @@ class DomainTest {
         )
         val b = Finance.balances(listOf(card, bank), txs, today)
         val cb = b.first { it.account.id == 1L }
-        assertEquals(-120_000L, cb.balance)
-        assertEquals(20_000L, cb.futureInstallments)
         val st = cb.card!!
+        // 10 Eki ekstresi 1.000 ₺, 300 ₺ ödendi → 700 kaldı (son ödeme 20 Eki)
         assertEquals(LocalDate.of(2026, 10, 10), st.lastStatement)
         assertEquals(LocalDate.of(2026, 10, 20), st.dueDate)
         assertEquals(100_000L, st.statementDebt)
         assertEquals(70_000L, st.remainingDue)
-        assertEquals(50_000L, st.currentPeriodSpend)
-        assertEquals(5_000_000L - 120_000 - 20_000, st.available)
+        // Açık dönem (kesim 10 Kas): 500 ₺ harcama + 5 Kas'taki 200 ₺ taksit
+        assertEquals(70_000L, st.currentPeriodSpend)
+        assertEquals(-140_000L, cb.balance)
+        assertEquals(5_000_000L - 140_000, st.available)
         assertEquals(10_000_000L - 30_000, b.first { it.account.id == 2L }.balance)
     }
 }

@@ -109,13 +109,13 @@ fun AccountsScreen(data: AppData, vm: MainViewModel, nav: NavHostController) {
                 val list = active.filter { it.account.type == type }
                 if (list.isNotEmpty()) {
                     item { SectionHeader(type.label) }
-                    list.forEach { b -> item(key = b.account.id) { AccountCard(b, data, onOpen = { nav.navigate(Routes.history(account = b.account.id)) }, onEdit = { nav.navigate(Routes.account(b.account.id)) }) } }
+                    list.forEach { b -> item(key = b.account.id) { AccountCard(b, data, onOpen = { nav.navigate(accountRoute(b.account)) }, onEdit = { nav.navigate(Routes.account(b.account.id)) }) } }
                 }
             }
             val archived = data.balances.filter { it.account.archived }
             if (archived.isNotEmpty()) {
                 item { SectionHeader("Arşiv") }
-                archived.forEach { b -> item(key = b.account.id) { AccountCard(b, data, onOpen = { nav.navigate(Routes.history(account = b.account.id)) }, onEdit = { nav.navigate(Routes.account(b.account.id)) }) } }
+                archived.forEach { b -> item(key = b.account.id) { AccountCard(b, data, onOpen = { nav.navigate(accountRoute(b.account)) }, onEdit = { nav.navigate(Routes.account(b.account.id)) }) } }
             }
             item {
                 FilledTonalButton(onClick = { nav.navigate(Routes.account()) }, Modifier.fillMaxWidth()) {
@@ -203,8 +203,12 @@ fun AccountEditScreen(data: AppData, vm: MainViewModel, nav: NavHostController, 
     var name by rememberSaveable { mutableStateOf(existing?.name ?: "") }
     var type by rememberSaveable { mutableStateOf(existing?.type ?: AccountType.BANK) }
     var initial by rememberSaveable {
-        mutableStateOf(existing?.let { Money.toInput(if (it.type == AccountType.CREDIT_CARD) -it.initialBalance else it.initialBalance) } ?: "")
+        mutableStateOf(existing?.takeIf { it.type != AccountType.CREDIT_CARD }?.let { Money.toInput(it.initialBalance) } ?: "")
     }
+    // Kart: bu dönemki borç (boş bırakılırsa değişmez), dönem harcama hedefi, geçmiş ekstreleri ödenmiş say
+    var cardDebt by rememberSaveable { mutableStateOf("") }
+    var cycleBudget by rememberSaveable { mutableStateOf(existing?.cycleBudget?.takeIf { it > 0 }?.let { Money.toInput(it) } ?: "") }
+    var assumePaid by rememberSaveable { mutableStateOf(existing?.assumePaid ?: true) }
     var limit by rememberSaveable { mutableStateOf(existing?.let { if (it.creditLimit > 0) Money.toInput(it.creditLimit) else "" } ?: "") }
     var statement by rememberSaveable { mutableStateOf(existing?.statementDay?.takeIf { it > 0 }?.toString() ?: "") }
     var due by rememberSaveable { mutableStateOf(existing?.dueDay?.takeIf { it > 0 }?.toString() ?: "") }
@@ -232,17 +236,21 @@ fun AccountEditScreen(data: AppData, vm: MainViewModel, nav: NavHostController, 
             }
             if (error != null) return@FormScreen
             val entered = Money.parse(initial) ?: 0
+            val isCard = type == AccountType.CREDIT_CARD
             vm.saveAccount(
                 (existing ?: Account(name = "", type = type, color = color, icon = icon)).copy(
                     name = name.trim(), type = type, color = color, icon = icon,
-                    initialBalance = if (type == AccountType.CREDIT_CARD) -entered else entered,
+                    initialBalance = if (isCard) existing?.initialBalance?.coerceAtLeast(0) ?: 0 else entered,
+                    cycleBudget = if (isCard) Money.parse(cycleBudget) ?: 0 else 0,
+                    assumePaid = assumePaid,
                     creditLimit = if (type == AccountType.CREDIT_CARD) Money.parse(limit) ?: 0 else 0,
                     statementDay = if (type == AccountType.CREDIT_CARD) sd else 0,
                     dueDay = if (type == AccountType.CREDIT_CARD) dd else 0,
                     includeInTotal = include, archived = archived,
                     currency = if (type == AccountType.CREDIT_CARD) data.baseCode else currency,
                     sortOrder = existing?.sortOrder ?: data.accounts.size
-                )
+                ),
+                cardDebt = if (isCard) Money.parse(cardDebt) else null
             )
             nav.popBackStack()
         }
@@ -273,8 +281,13 @@ fun AccountEditScreen(data: AppData, vm: MainViewModel, nav: NavHostController, 
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         if (type == AccountType.CREDIT_CARD) {
-            AmountInput(initial, { initial = it }, "Mevcut kart borcu",
-                supporting = "Kartın bugünkü toplam borcunu yaz (taksitler dahil); eksi bakiye olarak kaydedilir")
+            FormLabel("Kart rengi")
+            ColorPicker(color, listOf(0xFFDC2626, 0xFF2563EB, 0xFF16A34A, 0xFF7C3AED, 0xFFF59E0B, 0xFF0F172A, 0xFFDB2777, 0xFF0891B2)) { color = it }
+            AmountInput(cardDebt, { cardDebt = it }, "Bu dönemki harcama (son kesimden bu yana)",
+                supporting = if (existing == null) "Bankanın uygulamasındaki dönem içi harcamayı yaz. Taksitlerini sonra kart sayfasından ekleyeceksin."
+                else "Boş bırakırsan değişmez. Kart sayfasındaki “Borcu güncelle” ile de yapabilirsin.")
+            AmountInput(cycleBudget, { cycleBudget = it }, "Dönem harcama hedefi (isteğe bağlı)",
+                supporting = "Ör. 15.000 — kesime kadar günde ne kadar harcayabileceğini hesaplarım")
             AmountInput(limit, { limit = it }, "Kart limiti")
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 androidx.compose.material3.OutlinedTextField(
@@ -288,7 +301,12 @@ fun AccountEditScreen(data: AppData, vm: MainViewModel, nav: NavHostController, 
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number)
                 )
             }
-            Text("Kredi kartı ödemesini, banka hesabından bu karta “Transfer” olarak gir.", style = MaterialTheme.typography.bodySmall,
+            SwitchRow(
+                "Geçmiş ekstreleri ödenmiş say",
+                "Son ödeme günü geçen ekstreler ödendi kabul edilir; her ayı tek tek işaretlemen gerekmez",
+                assumePaid
+            ) { assumePaid = it }
+            Text("Ekstre ödemesini kart sayfasındaki “Öde” ile ya da bankadan karta “Transfer” olarak girebilirsin.", style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         } else {
             AmountInput(
@@ -303,10 +321,12 @@ fun AccountEditScreen(data: AppData, vm: MainViewModel, nav: NavHostController, 
                 }
             )
         }
-        FormLabel("Renk")
-        ColorPicker(color, DefaultData.palette) { color = it }
-        FormLabel("İkon")
-        IconPicker(icon, color) { icon = it }
+        if (type != AccountType.CREDIT_CARD) {
+            FormLabel("Renk")
+            ColorPicker(color, DefaultData.palette) { color = it }
+            FormLabel("İkon")
+            IconPicker(icon, color) { icon = it }
+        }
         SwitchRow("Toplam varlığa dahil et", "Kapatırsan bu hesap net varlık hesabına katılmaz", include) { include = it }
         if (existing != null) SwitchRow("Arşivle", "Hesap gizlenir ama işlemleri korunur", archived) { archived = it }
         error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
@@ -358,3 +378,7 @@ private fun RatesCard(data: AppData, vm: MainViewModel) {
         }
     }
 }
+
+/** Kredi kartı ekstre sayfasına, diğer hesaplar işlem listesine açılır */
+fun accountRoute(a: Account): String =
+    if (a.type == AccountType.CREDIT_CARD && a.statementDay in 1..31) Routes.card(a.id) else Routes.history(account = a.id)

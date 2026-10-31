@@ -121,7 +121,12 @@ class MainViewModel(val repo: Repository) : ViewModel() {
         }
     }
 
-    fun saveAccount(a: Account) = launch { repo.saveAccount(a) }
+    /** [cardDebt] verilirse kartın açık dönem borcu bu tutara eşitlenir */
+    fun saveAccount(a: Account, cardDebt: Long? = null) = launch {
+        val returned = repo.saveAccount(a)
+        val id = if (a.id != 0L) a.id else returned
+        if (cardDebt != null) repo.setCardDebt(a.copy(id = id), cardDebt)
+    }
     fun deleteAccount(a: Account) = launch { repo.deleteAccount(a); message("${a.name} silindi") }
     fun saveCategory(c: Category) = launch { repo.saveCategory(c) }
     fun deleteCategory(c: Category) = launch { repo.deleteCategory(c); message("${c.name} silindi") }
@@ -140,6 +145,19 @@ class MainViewModel(val repo: Repository) : ViewModel() {
     fun saveDebt(d: Debt) = launch { repo.saveDebt(d) }
     fun deleteDebt(d: Debt) = launch { repo.deleteDebt(d) }
     fun payDebt(d: Debt, amount: Long, accountId: Long?) = launch { repo.payDebt(d, amount, accountId) }
+
+    fun setCardDebt(card: Account, amount: Long, includeUnpaid: Boolean) = launch {
+        val diff = repo.setCardDebt(card, amount, includeUnpaid)
+        message(if (diff == 0L) "Borç zaten bu tutarda" else "${card.name} borcu güncellendi")
+    }
+
+    fun payCard(card: Account, fromAccountId: Long, amount: Long) = launch {
+        repo.payCard(card, fromAccountId, amount)
+        message("${card.name} ödemesi kaydedildi")
+    }
+
+    /** Silmeden ekleyen içe aktarma; eklenen işlem sayısını döner */
+    suspend fun mergeJson(text: String): Int = repo.mergeSnapshot(Backup.fromJson(text))
 
     fun refreshRates() = launch {
         repo.refreshRates(maxAgeMs = 0)

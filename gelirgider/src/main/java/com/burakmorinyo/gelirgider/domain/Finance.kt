@@ -20,7 +20,18 @@ data class CardStatus(
     val remainingDue: Long,
     /** Hesap kesiminden bu yana yapılan harcama (sonraki ekstreye yansır) */
     val currentPeriodSpend: Long,
-    val available: Long
+    val available: Long,
+    /** Toplam güncel borç: ödenmemiş ekstreler + açık dönem */
+    val debt: Long = 0,
+    /** Gelecek ekstrelere yansıyacak taksitler */
+    val futureInstallments: Long = 0,
+    val openStatement: Statement? = null,
+    val statements: List<Statement> = emptyList(),
+    /** Hesap kesimine kalan gün (bugün dahil) */
+    val daysToClose: Int = 0,
+    /** Dönem harcama hedefinden kalan; hedef yoksa null */
+    val cycleRemaining: Long? = null,
+    val overdue: Boolean = false
 )
 
 data class AccountBalance(
@@ -90,40 +101,14 @@ object Finance {
         val end = today.plusDays(1).startMillis()
         return accounts.map { acc ->
             val related = txs.filter { it.accountId == acc.id || it.toAccountId == acc.id }
-            val balance = balanceUntil(acc, related, end)
-            val future = if (acc.type == AccountType.CREDIT_CARD)
-                related.filter { it.date >= end && it.type == TxType.EXPENSE && it.accountId == acc.id }.sumOf { it.amount }
-            else 0L
-            val card = if (acc.type == AccountType.CREDIT_CARD && acc.statementDay in 1..31)
-                cardStatus(acc, related, balance, future, today) else null
-            AccountBalance(acc, balance, future, card)
+            if (acc.type == AccountType.CREDIT_CARD && acc.statementDay in 1..31) {
+                // Kart borcu ekstrelerden hesaplanır (geçmiş ekstreler ödenmiş sayılabilir)
+                val card = CardStatements.status(acc, related, today)
+                AccountBalance(acc, -card.debt, card.futureInstallments, card)
+            } else {
+                AccountBalance(acc, balanceUntil(acc, related, end), 0, null)
+            }
         }
-    }
-
-    fun cardStatus(acc: Account, txs: List<Transaction>, balance: Long, future: Long, today: LocalDate): CardStatus {
-        val sd = acc.statementDay
-        var last = today.withDayClamped(sd)
-        if (last.isAfter(today)) last = today.minusMonths(1).withDayClamped(sd)
-        val next = last.plusMonths(1).withDayClamped(sd)
-        val dueDay = if (acc.dueDay in 1..31) acc.dueDay else sd
-        var due = last.withDayClamped(dueDay)
-        if (!due.isAfter(last)) due = last.plusMonths(1).withDayClamped(dueDay)
-
-        val afterLast = last.plusDays(1).startMillis()
-        val todayEnd = today.plusDays(1).startMillis()
-        val statementDebt = (-balanceUntil(acc, txs, afterLast)).coerceAtLeast(0)
-        val since = txs.filter { it.date in afterLast until todayEnd }
-        val paidSince = since.sumOf { tx -> effect(tx, acc.id).let { if (it > 0) it else 0L } }
-        val spentSince = since.sumOf { tx -> effect(tx, acc.id).let { if (it < 0) -it else 0L } }
-        return CardStatus(
-            lastStatement = last,
-            nextStatement = next,
-            dueDate = due,
-            statementDebt = statementDebt,
-            remainingDue = (statementDebt - paidSince).coerceAtLeast(0),
-            currentPeriodSpend = spentSince,
-            available = acc.creditLimit + balance - future
-        )
     }
 
     fun inPeriod(txs: List<Transaction>, period: Period) = txs.filter { it.date in period }

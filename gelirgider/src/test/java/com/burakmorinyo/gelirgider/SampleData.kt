@@ -31,8 +31,10 @@ object SampleData {
         val accounts = listOf(
             Account(1, "Nakit", AccountType.CASH, 0xFF22C55E, "wallet", initialBalance = 150_000, sortOrder = 0),
             Account(2, "Ziraat Maaş", AccountType.BANK, 0xFF3B82F6, "bank", initialBalance = 2_000_000, sortOrder = 1),
-            Account(3, "Bonus Kart", AccountType.CREDIT_CARD, 0xFF10B981, "credit_card", initialBalance = -320_000,
-                creditLimit = 6_000_000, statementDay = 5, dueDay = 15, sortOrder = 2),
+            Account(3, "Kırmızı Kart", AccountType.CREDIT_CARD, 0xFFDC2626, "credit_card",
+                creditLimit = 6_000_000, statementDay = 1, dueDay = 10, sortOrder = 2, cycleBudget = 1_500_000),
+            Account(6, "Mavi Kart", AccountType.CREDIT_CARD, 0xFF2563EB, "credit_card",
+                creditLimit = 9_000_000, statementDay = 15, dueDay = 25, sortOrder = 3),
             Account(4, "Altın", AccountType.INVESTMENT, 0xFFF59E0B, "diamond", initialBalance = 1_250, sortOrder = 3, currency = "GOLD_GRAM"),
             Account(5, "Dolar Hesabı", AccountType.SAVINGS, 0xFF10B981, "exchange", initialBalance = 85_000, sortOrder = 4, currency = "USD")
         )
@@ -57,7 +59,7 @@ object SampleData {
                 add(d.plusDays(6), TxType.EXPENSE, 49_900, 3, cat("Telefon & İnternet"), "Superonline")
                 add(d.plusDays(8), TxType.EXPENSE, 22_999, 3, cat("Abonelikler"), "Netflix")
                 add(d.plusDays(12), TxType.EXPENSE, 5_999, 3, cat("Abonelikler"), "Spotify")
-                add(d.plusDays(14), TxType.TRANSFER, 1_900_000, 2, null, "Kart ödemesi", to = 3)
+                add(d.plusDays(9), TxType.TRANSFER, 1_300_000, 2, null, "Kart ödemesi", to = 3)
                 add(d.plusDays(2), TxType.TRANSFER, 300_000, 2, null, "ATM", to = 1)
                 if (d.monthValue % 2 == 0) add(d.plusDays(18), TxType.INCOME, 750_000, 2, cat("Ek Gelir", TxType.INCOME), "Freelance proje")
             }
@@ -72,14 +74,18 @@ object SampleData {
         }
         // 5 gr altın alımı (farklı para birimli transfer)
         txs += Transaction(id++, TxType.TRANSFER, 3_050_000, 2, 4, null, today().minusDays(20).startMillis() + 40_000_000, "Altın alımı", toAmount = 500)
-        // Taksitli alışveriş: 3 ay önce 6 taksit telefon
-        val buy = today().minusMonths(2).withDayOfMonth(10)
-        val group = 777L
-        for (i in 0 until 6) {
-            val date = buy.plusMonths(i.toLong())
-            txs += Transaction(id++, TxType.EXPENSE, 750_000, 3, null, cat("Elektronik"), date.startMillis() + 50_000_000, "iPhone",
-                installmentGroup = group, installmentIndex = i + 1, installmentCount = 6)
+        // Mavi Kart'ta Mart'tan beri süren taksitler
+        var group = 777L
+        fun installments(card: Long, start: LocalDate, total: Long, count: Int, note: String, category: Long) {
+            group++
+            com.burakmorinyo.gelirgider.domain.splitInstallments(total, count).forEachIndexed { i, a ->
+                txs += Transaction(id++, TxType.EXPENSE, a, card, null, category, start.plusMonths(i.toLong()).startMillis() + 50_000_000, note,
+                    installmentGroup = group, installmentIndex = i + 1, installmentCount = count)
+            }
         }
+        installments(6, LocalDate.of(today().year, 3, 12), 4_500_000, 12, "iPhone", cat("Elektronik"))
+        installments(6, LocalDate.of(today().year, 5, 3), 1_800_000, 6, "Buzdolabı", cat("Ev & Yaşam"))
+        installments(3, today().minusMonths(2).withDayOfMonth(20), 900_000, 3, "Kışlık mont", cat("Giyim"))
 
         val t = today()
         val recurring = listOf(

@@ -1,6 +1,7 @@
 package com.burakmorinyo.gelirgider.data
 
 import androidx.room.withTransaction
+import com.burakmorinyo.gelirgider.domain.CardStatements
 import com.burakmorinyo.gelirgider.domain.Currencies
 import com.burakmorinyo.gelirgider.domain.Finance
 import com.burakmorinyo.gelirgider.domain.Money
@@ -137,6 +138,40 @@ class Repository(
         return rate
     }
 
+    // ---------- Kredi kartı ----------
+
+    /**
+     * "Kartımdaki borç şu kadar oldu": açık dönemin (ya da toplam borcun) gerçek tutarını eşitlemek için
+     * bugüne bir düzeltme kaydı ekler. [includeUnpaid] true ise girilen tutar kesilmiş ödenmemiş ekstreleri de kapsar.
+     */
+    suspend fun setCardDebt(card: Account, amount: Long, includeUnpaid: Boolean = false): Long {
+        val txs = db.transactions().all().filter { it.accountId == card.id || it.toAccountId == card.id }
+        val st = CardStatements.status(card, txs)
+        val current = if (includeUnpaid) st.debt else st.currentPeriodSpend - (st.openStatement?.paid ?: 0)
+        val diff = amount - current
+        if (diff == 0L) return 0
+        db.transactions().upsert(
+            Transaction(
+                type = if (diff > 0) TxType.EXPENSE else TxType.INCOME,
+                amount = kotlin.math.abs(diff),
+                accountId = card.id,
+                date = System.currentTimeMillis(),
+                note = if (diff > 0) "Kart harcamaları (toplu)" else "Kart borcu düzeltmesi"
+            )
+        )
+        return diff
+    }
+
+    /** Ekstre ödemesi: banka/nakit hesabından karta transfer */
+    suspend fun payCard(card: Account, fromAccountId: Long, amount: Long) {
+        db.transactions().upsert(
+            Transaction(
+                type = TxType.TRANSFER, amount = amount, accountId = fromAccountId, toAccountId = card.id,
+                date = System.currentTimeMillis(), note = "${card.name} ödemesi"
+            )
+        )
+    }
+
     // ---------- Hesaplar ----------
 
     suspend fun saveAccount(a: Account): Long = db.accounts().upsert(a)
@@ -159,7 +194,16 @@ class Repository(
 
     // ---------- Tekrarlayan işlemler ----------
 
-    suspend fun saveRecurring(r: Recurring): Long = db.recurring().upsert(r)
+    suspend fun saveRecurring(r: Recurring): Long {
+        // Hatırlatmalı yeni kayıtta geçmiş tarihler atlanır: Mart'ta başlamış bir ödeme için geçmiş ayları
+        // tek tek "ödendi" diye işaretlemek gerekmesin
+        var item = r
+        if (r.id == 0L && !r.autoCreate) {
+            var guard = 0
+            while (item.active && item.nextDate.toLocalDate().isBefore(today()) && guard++ < 400) item = item.advanced()
+        }
+        return db.recurring().upsert(item)
+    }
     suspend fun deleteRecurring(r: Recurring) = db.recurring().delete(r)
 
     private fun Recurring.toTransaction(date: LocalDate) = Transaction(
@@ -275,6 +319,47 @@ class Repository(
         db.goals().insertAll(s.goals)
         db.goals().insertAllDeposits(s.deposits)
         db.debts().insertAll(s.debts)
+    }
+
+    /**
+     * Yedekteki verileri mevcut verilerin üzerine yazmadan ekler. Hesap ve kategoriler adına göre eşleştirilir,
+     * olmayanlar oluşturulur. Eklenen işlem sayısını döner.
+     */
+    suspend fun mergeSnapshot(s: Backup.Snapshot): Int = db.withTransaction {
+        val accounts = db.accounts().all()
+        val accMap = s.accounts.associate { a ->
+            val match = accounts.firstOrNull { it.name.equals(a.name, ignoreCase = true) && it.type == a.type }
+            a.id to (match?.id ?: db.accounts().upsert(a.copy(id = 0, sortOrder = accounts.size + a.sortOrder)))
+        }
+        val categories = db.categories().all()
+        val catMap = s.categories.associate { c ->
+            val match = categories.firstOrNull { it.name.equals(c.name, ignoreCase = true) && it.type == c.type }
+            c.id to (match?.id ?: db.categories().upsert(c.copy(id = 0)))
+        }
+        val groupBase = System.currentTimeMillis()
+        val groupMap = s.transactions.mapNotNull { it.installmentGroup }.distinct().withIndex().associate { (i, g) -> g to groupBase + i }
+        val txs = s.transactions.mapNotNull { t ->
+            val acc = accMap[t.accountId] ?: return@mapNotNull null
+            t.copy(
+                id = 0, accountId = acc, toAccountId = t.toAccountId?.let { accMap[it] },
+                categoryId = t.categoryId?.let { catMap[it] }, installmentGroup = t.installmentGroup?.let { groupMap[it] },
+                recurringId = null
+            )
+        }
+        db.transactions().insertAll(txs)
+        s.recurring.forEach { r ->
+            val acc = accMap[r.accountId] ?: return@forEach
+            db.recurring().upsert(r.copy(id = 0, accountId = acc, categoryId = r.categoryId?.let { catMap[it] }))
+        }
+        s.budgets.forEach { b ->
+            val cat = b.categoryId?.let { catMap[it] ?: return@forEach }
+            val existing = db.budgets().all().firstOrNull { it.categoryId == cat }
+            db.budgets().upsert((existing ?: Budget(categoryId = cat, amount = b.amount)).copy(amount = b.amount))
+        }
+        val goalMap = s.goals.associate { g -> g.id to db.goals().upsert(g.copy(id = 0)) }
+        db.goals().insertAllDeposits(s.deposits.mapNotNull { d -> goalMap[d.goalId]?.let { d.copy(id = 0, goalId = it) } })
+        s.debts.forEach { db.debts().upsert(it.copy(id = 0)) }
+        txs.size
     }
 
     suspend fun hasTransactionToday(): Boolean {
