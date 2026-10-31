@@ -172,21 +172,21 @@ object CardStatements {
         )
     }
 
-    /** Aynı alışverişin taksitleri: kaç tanesi geçmiş ekstrelere yazıldı, kaçı kaldı */
+    /** Aynı alışverişin taksitleri: kaçıncı taksitte olunduğu ve sonrasında kalan tutar */
     data class InstallmentPlan(
         val group: Long,
         val title: String,
         val perInstallment: Long,
         val count: Int,
         val total: Long,
-        /** Kesilmiş ekstrelere yansıyan taksit sayısı */
+        /** Bu ayın (açık dönemin) taksiti dahil, ekstreye yansımış taksit sayısı: "8/9" */
         val billed: Int,
         val remainingAmount: Long,
         val lastClosing: LocalDate,
-        val categoryId: Long?
-    ) {
-        val finished get() = billed >= count
-    }
+        val categoryId: Long?,
+        /** Son taksit de kesilmiş bir ekstreye yansıdıysa plan bitmiştir */
+        val finished: Boolean
+    )
 
     fun installmentPlans(card: Account, txs: List<Transaction>, today: LocalDate = today()): List<InstallmentPlan> {
         val sd = card.statementDay.coerceIn(1, 31)
@@ -195,7 +195,8 @@ object CardStatements {
             .groupBy { it.installmentGroup!! }
             .map { (g, parts) ->
                 val sorted = parts.sortedBy { it.installmentIndex }
-                val billedParts = sorted.filter { closingFor(it.date.toLocalDate(), sd).isBefore(openClosing) }
+                val billedParts = sorted.filter { !closingFor(it.date.toLocalDate(), sd).isAfter(openClosing) }
+                val lastClosing = closingFor(sorted.last().date.toLocalDate(), sd)
                 InstallmentPlan(
                     group = g,
                     title = sorted.first().note.ifBlank { "Taksitli alışveriş" },
@@ -204,8 +205,9 @@ object CardStatements {
                     total = sorted.sumOf { it.amount },
                     billed = billedParts.size,
                     remainingAmount = sorted.sumOf { it.amount } - billedParts.sumOf { it.amount },
-                    lastClosing = closingFor(sorted.last().date.toLocalDate(), sd),
-                    categoryId = sorted.first().categoryId
+                    lastClosing = lastClosing,
+                    categoryId = sorted.first().categoryId,
+                    finished = lastClosing.isBefore(openClosing)
                 )
             }
             .sortedWith(compareBy<InstallmentPlan> { it.finished }.thenBy { it.lastClosing })

@@ -47,9 +47,11 @@ class CardStatementsTest {
         assertEquals(2, st.daysToClose)
 
         val plan = CardStatements.installmentPlans(red, phone(), today).single()
-        assertEquals(7, plan.billed)
+        // Bu ayki (Ekim) taksit dahil 8/10; ondan sonra 2 taksit kaldı
+        assertEquals(8, plan.billed)
         assertEquals(10, plan.count)
-        assertEquals(360_000L, plan.remainingAmount)
+        assertEquals(240_000L, plan.remainingAmount)
+        assertFalse(plan.finished)
     }
 
     @Test fun withoutAssumePaidOldStatementsAreOverdueUntilPaid() {

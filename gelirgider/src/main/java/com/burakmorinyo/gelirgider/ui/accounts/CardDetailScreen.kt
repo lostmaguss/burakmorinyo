@@ -315,7 +315,7 @@ private fun PlanRow(p: CardStatements.InstallmentPlan, data: AppData) {
             }
             Column(horizontalAlignment = Alignment.End) {
                 Text("${p.billed}/${p.count}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text(if (p.finished) "bitti" else "kalan ${Money.format(p.remainingAmount)}", style = MaterialTheme.typography.labelSmall,
+                Text(if (p.finished) "bitti" else if (p.remainingAmount == 0L) "son taksit bu ay" else "sonra ${Money.format(p.remainingAmount)}", style = MaterialTheme.typography.labelSmall,
                     color = if (p.finished) LocalFinanceColors.current.income else MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
